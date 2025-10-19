@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Add Recipe - CalorieMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="fas fa-plus me-2"></i>Add New Recipe</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Recipe Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" required 
+                               placeholder="e.g., Grandma's Chocolate Chip Cookies">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ingredients" class="form-label">Ingredients *</label>
+                        <textarea class="form-control" id="ingredients" name="ingredients" rows="6" required
+                                  placeholder="List all ingredients with quantities:&#10;• 2 cups all-purpose flour&#10;• 1 cup sugar&#10;• 1/2 cup butter&#10;• 2 eggs&#10;• 1 tsp vanilla extract"></textarea>
+                        <div class="form-text">List each ingredient on a new line with quantities</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="instructions" class="form-label">Instructions *</label>
+                        <textarea class="form-control" id="instructions" name="instructions" rows="8" required
+                                  placeholder="Step-by-step cooking instructions:&#10;1. Preheat oven to 350°F&#10;2. Mix dry ingredients in a bowl&#10;3. Cream butter and sugar&#10;4. Add eggs and vanilla&#10;5. Combine wet and dry ingredients&#10;6. Bake for 10-12 minutes"></textarea>
+                        <div class="form-text">Write clear, step-by-step instructions</div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('recipes') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-recipe">
+                            <i class="fas fa-save me-1"></i>Save Recipe
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-resize textareas
+    document.querySelectorAll('textarea').forEach(textarea => {
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+    });
+</script>
+{% endblock %}

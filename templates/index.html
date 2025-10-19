@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Home - CalorieMate{% endblock %}
+
+{% block content %}
+<div class="jumbotron bg-gradient text-white rounded p-5 mb-5" style="background: linear-gradient(135deg, #28a745, #20c997);">
+    <div class="container">
+        <h1 class="display-4"><i class="fas fa-utensils me-3"></i>Welcome to CalorieMate</h1>
+        <p class="lead">Your personal recipe manager and calorie tracking companion</p>
+        <hr class="my-4" style="border-color: rgba(255,255,255,0.3);">
+        <p>Create, manage, and organize your favorite recipes all in one place!</p>
+        <a class="btn btn-light btn-lg" href="{{ url_for('add_recipe') }}" role="button">
+            <i class="fas fa-plus me-2"></i>Get Started
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="fas fa-book fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Recipe Management</h5>
+                <p class="card-text">Create, edit, and organize your personal recipe collection with detailed ingredients and instructions.</p>
+                <a href="{{ url_for('recipes') }}" class="btn btn-primary">View Recipes</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="fas fa-plus-circle fa-3x text-success mb-3"></i>
+                <h5 class="card-title">Add New Recipes</h5>
+                <p class="card-text">Easily add new recipes with our intuitive form. Include ingredients, instructions, and more.</p>
+                <a href="{{ url_for('add_recipe') }}" class="btn btn-success">Add Recipe</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Track & Analyze</h5>
+                <p class="card-text">Monitor your cooking habits and discover your most popular recipes with built-in analytics.</p>
+                <a href="{{ url_for('recipes') }}" class="btn btn-info">Coming Soon</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-12">
+        <h3 class="text-center mb-4">Quick Stats</h3>
+        <div class="row text-center">
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h2 class="text-primary">{{ total_recipes }}</h2>
+                        <p class="text-muted mb-0">Total Recipes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h2 class="text-success">0</h2>
+                        <p class="text-muted mb-0">This Week</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h2 class="text-info">0</h2>
+                        <p class="text-muted mb-0">Favorites</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h2 class="text-warning">0</h2>
+                        <p class="text-muted mb-0">Ratings</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
