@@ -49,7 +49,7 @@ class User(UserMixin):
         self.first_name = kwargs.get('first_name')
         self.last_name = kwargs.get('last_name')
         self.role = kwargs.get('role', 'user')
-        self.is_active = kwargs.get('is_active', True)
+        self._is_active = kwargs.get('is_active', True)  # Use private attribute
         self.email_verified = kwargs.get('email_verified', False)
         self.profile_picture_url = kwargs.get('profile_picture_url')
         self.bio = kwargs.get('bio')
@@ -58,6 +58,16 @@ class User(UserMixin):
         self.created_at = kwargs.get('created_at')
         self.updated_at = kwargs.get('updated_at')
         self.last_login = kwargs.get('last_login')
+    
+    @property
+    def is_active(self):
+        """Override UserMixin's is_active property."""
+        return self._is_active
+    
+    @is_active.setter
+    def is_active(self, value):
+        """Setter for is_active property."""
+        self._is_active = bool(value)
     
     @staticmethod
     def create(username: str, email: str, password: str, **kwargs) -> 'User':
@@ -231,6 +241,17 @@ class User(UserMixin):
         
         return db_client.execute_query(query, (self.id,))
     
+    @property
+    def personal_ingredients(self) -> List[Dict[str, Any]]:
+        """Get user's personal ingredients."""
+        db_client = get_db_client()
+        query = """
+        SELECT * FROM user_personal_ingredients 
+        WHERE user_id = %s 
+        ORDER BY name ASC
+        """
+        return db_client.execute_query(query, (self.id,))
+    
     def __repr__(self):
         return f'<User {self.username}>'
 
@@ -264,16 +285,24 @@ class ProductNutrition:
         query = """
             INSERT INTO product_nutrition 
             (product_id, calories, protein_g, carbohydrates_g, fiber_g, sugars_g,
-             fat_total_g, fat_saturated_g, sodium_mg, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+             fat_total_g, fat_saturated_g, sodium_mg)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         
-        result = client.execute_query(query, (
-            product_id, calories, protein_g, carbohydrates_g, fiber_g, sugars_g,
-            fat_total_g, fat_saturated_g, sodium_mg
-        ))
+        nutrition_data = {
+            'product_id': product_id,
+            'calories': calories,
+            'protein_g': protein_g,
+            'carbohydrates_g': carbohydrates_g,
+            'fiber_g': fiber_g,
+            'sugars_g': sugars_g,
+            'fat_total_g': fat_total_g,
+            'fat_saturated_g': fat_saturated_g,
+            'sodium_mg': sodium_mg
+        }
         
-        if result:
+        nutrition_id = client.insert_record('product_nutrition', nutrition_data)
+        if nutrition_id:
             return ProductNutrition.get_by_product_id(product_id)
         return None
     
@@ -472,6 +501,8 @@ class Recipe:
         self.id = kwargs.get('id')
         self.name = kwargs.get('name')
         self.description = kwargs.get('description')
+        self.ingredients = kwargs.get('ingredients')
+        self.instructions = kwargs.get('instructions')
         self.prep_time_minutes = kwargs.get('prep_time_minutes')
         self.cook_time_minutes = kwargs.get('cook_time_minutes')
         self.total_time_minutes = kwargs.get('total_time_minutes')
@@ -504,6 +535,8 @@ class Recipe:
         recipe_data = {
             'name': name,
             'description': kwargs.get('description'),
+            'ingredients': kwargs.get('ingredients'),
+            'instructions': kwargs.get('instructions'),
             'prep_time_minutes': kwargs.get('prep_time_minutes'),
             'cook_time_minutes': kwargs.get('cook_time_minutes'),
             'total_time_minutes': kwargs.get('total_time_minutes'),
@@ -530,6 +563,43 @@ class Recipe:
         db_client = get_db_client()
         result = db_client.fetch_one("SELECT * FROM recipes WHERE id = %s", (recipe_id,))
         return Recipe(**result) if result else None
+    
+    @staticmethod
+    def update(recipe_id: int, update_data: Dict[str, Any]) -> bool:
+        """Update an existing recipe in the database."""
+        db_client = get_db_client()
+        
+        # Only include allowed fields for update
+        allowed_fields = {
+            'name', 'description', 'ingredients', 'instructions', 
+            'prep_time_minutes', 'cook_time_minutes', 'total_time_minutes',
+            'servings', 'difficulty_level', 'category', 'cuisine_type',
+            'dietary_tags', 'image_url', 'video_url', 'is_public', 'is_featured'
+        }
+        
+        filtered_data = {k: v for k, v in update_data.items() if k in allowed_fields}
+        
+        if not filtered_data:
+            return False
+        
+        try:
+            result = db_client.update_record('recipes', filtered_data, {'id': recipe_id})
+            return result > 0  # Returns number of affected rows
+        except Exception as e:
+            print(f"Error updating recipe {recipe_id}: {e}")
+            return False
+    
+    @staticmethod
+    def delete(recipe_id: int) -> bool:
+        """Delete a recipe from the database."""
+        db_client = get_db_client()
+        
+        try:
+            result = db_client.delete_record('recipes', {'id': recipe_id})
+            return result > 0  # Returns number of affected rows
+        except Exception as e:
+            print(f"Error deleting recipe {recipe_id}: {e}")
+            return False
     
     @staticmethod
     def count(filters: Dict[str, Any] = None) -> int:
@@ -589,6 +659,21 @@ class Recipe:
         
         results = db_client.execute_query(search_query, tuple(params))
         return [Recipe(**row) for row in results]
+    
+    @staticmethod
+    @staticmethod
+    def get_categories() -> List[str]:
+        """Get list of distinct recipe categories."""
+        db_client = get_db_client()
+        query = """
+        SELECT DISTINCT category 
+        FROM recipes 
+        WHERE category IS NOT NULL AND category != '' 
+        AND is_public = 1 AND is_approved = 1
+        ORDER BY category
+        """
+        results = db_client.execute_query(query)
+        return [row['category'] for row in results]
     
     def get_ingredients(self) -> List[Dict[str, Any]]:
         """Get ingredients for this recipe."""
@@ -779,6 +864,21 @@ class UserSavedRecipe:
             (user_id, recipe_id)
         )
         return UserSavedRecipe(**result) if result else None
+    
+    @staticmethod
+    def is_saved(user_id: int, recipe_id: int) -> bool:
+        """Check if a recipe is saved by a user."""
+        return UserSavedRecipe.get_by_user_and_recipe(user_id, recipe_id) is not None
+    
+    @staticmethod
+    def delete(user_id: int, recipe_id: int) -> bool:
+        """Delete saved recipe by user and recipe IDs."""
+        db_client = get_db_client()
+        result = db_client.delete_record('user_saved_recipes', {
+            'user_id': user_id,
+            'recipe_id': recipe_id
+        })
+        return result > 0
     
     def delete(self) -> None:
         """Delete saved recipe."""

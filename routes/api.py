@@ -332,6 +332,187 @@ def rate_recipe(recipe_id):
         current_app.logger.error(f"Rate recipe error: {e}")
         return jsonify({'error': 'Failed to rate recipe'}), 500
 
+@api_bp.route('/product/search')
+@login_required
+def search_products():
+    """Search products by name or barcode."""
+    try:
+        query = request.args.get('q', '').strip()
+        
+        if not query or len(query) < 2:
+            return jsonify({'products': []})
+        
+        # Search products using the model's search method
+        products_data = Product.search(query, limit=20)
+        
+        products = []
+        for product in products_data:
+            # Get nutrition data for each product
+            nutrition = ProductNutrition.get_by_product_id(product.id)
+            
+            product_dict = {
+                'id': product.id,
+                'name': product.name,
+                'brand': product.brand,
+                'barcode': product.barcode,
+                'description': product.description,
+                'category': product.category,
+                'serving_size': product.serving_size,
+                'serving_size_unit': product.serving_size_unit,
+                'nutrition': {
+                    'calories': nutrition.calories if nutrition else None,
+                    'protein_g': nutrition.protein_g if nutrition else None,
+                    'carbohydrates_g': nutrition.carbohydrates_g if nutrition else None,
+                    'fat_total_g': nutrition.fat_total_g if nutrition else None,
+                    'fiber_g': nutrition.fiber_g if nutrition else None,
+                    'sodium_mg': nutrition.sodium_mg if nutrition else None
+                } if nutrition else {}
+            }
+            products.append(product_dict)
+        
+        return jsonify({'products': products})
+    
+    except Exception as e:
+        current_app.logger.error(f"Product search error: {e}")
+        return jsonify({'error': 'Search failed'}), 500
+
+@api_bp.route('/product/<int:product_id>')
+@login_required
+def get_product_by_id(product_id):
+    """Get detailed product information by ID."""
+    try:
+        product = Product.get(product_id)
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+        
+        # Get nutrition data
+        nutrition = ProductNutrition.get_by_product_id(product.id)
+        
+        product_data = {
+            'product': {
+                'id': product.id,
+                'name': product.name,
+                'brand': product.brand,
+                'barcode': product.barcode,
+                'description': product.description,
+                'category': product.category,
+                'serving_size': product.serving_size,
+                'serving_size_unit': product.serving_size_unit,
+                'nutrition': {
+                    'calories': nutrition.calories if nutrition else None,
+                    'protein_g': nutrition.protein_g if nutrition else None,
+                    'carbohydrates_g': nutrition.carbohydrates_g if nutrition else None,
+                    'fat_total_g': nutrition.fat_total_g if nutrition else None,
+                    'fiber_g': nutrition.fiber_g if nutrition else None,
+                    'sodium_mg': nutrition.sodium_mg if nutrition else None,
+                    'sugars_g': nutrition.sugars_g if nutrition else None,
+                    'fat_saturated_g': nutrition.fat_saturated_g if nutrition else None
+                } if nutrition else {}
+            }
+        }
+        
+        return jsonify(product_data)
+    
+    except Exception as e:
+        current_app.logger.error(f"Get product error: {e}")
+        return jsonify({'error': 'Failed to get product'}), 500
+
+@api_bp.route('/recipes')
+@login_required  
+def get_recipes_api():
+    """Get recipes as JSON API."""
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 20))
+        search = request.args.get('search', '').strip()
+        
+        filters = {'is_public': True, 'is_approved': True}
+        
+        if search:
+            recipes_data = Recipe.search(search, filters=filters, limit=per_page)
+            # Convert to paginated format for consistency
+            result = {
+                'items': recipes_data,
+                'total': len(recipes_data),
+                'page': 1,
+                'per_page': per_page,
+                'pages': 1
+            }
+        else:
+            result = Recipe.get_all(page=page, per_page=per_page, filters=filters)
+        
+        # Convert recipes to JSON-serializable format
+        recipes = []
+        for recipe in result['items']:
+            recipe_dict = {
+                'id': recipe.id,
+                'name': recipe.name,
+                'description': recipe.description,
+                'ingredients': recipe.ingredients,
+                'instructions': recipe.instructions,
+                'prep_time_minutes': recipe.prep_time_minutes,
+                'cook_time_minutes': recipe.cook_time_minutes,
+                'servings': recipe.servings,
+                'category': recipe.category,
+                'cuisine_type': recipe.cuisine_type,
+                'difficulty_level': recipe.difficulty_level,
+                'is_featured': recipe.is_featured,
+                'created_at': recipe.created_at.isoformat() if recipe.created_at else None,
+                'average_rating': recipe.average_rating,
+                'rating_count': recipe.rating_count
+            }
+            recipes.append(recipe_dict)
+        
+        return jsonify({
+            'recipes': recipes,
+            'pagination': {
+                'page': result['page'],
+                'per_page': result['per_page'],
+                'total': result['total'],
+                'pages': result['pages']
+            }
+        })
+    
+    except Exception as e:
+        current_app.logger.error(f"Get recipes API error: {e}")
+        return jsonify({'error': 'Failed to get recipes'}), 500
+
+@api_bp.route('/nutrition/search')
+@login_required
+def search_nutrition():
+    """Search nutrition database (external API integration)."""
+    try:
+        query = request.args.get('q', '').strip()
+        
+        if not query:
+            return jsonify({'items': []})
+        
+        # This would integrate with external nutrition APIs
+        # For now, return local product search results
+        products = Product.search(query, limit=10)
+        
+        nutrition_items = []
+        for product in products:
+            nutrition = ProductNutrition.get_by_product_id(product.id)
+            if nutrition:
+                nutrition_items.append({
+                    'id': product.id,
+                    'name': product.name,
+                    'brand': product.brand,
+                    'serving_size': product.serving_size,
+                    'serving_unit': product.serving_size_unit,
+                    'calories': nutrition.calories,
+                    'protein': nutrition.protein_g,
+                    'carbs': nutrition.carbohydrates_g,
+                    'fat': nutrition.fat_total_g
+                })
+        
+        return jsonify({'items': nutrition_items})
+    
+    except Exception as e:
+        current_app.logger.error(f"Nutrition search error: {e}")
+        return jsonify({'error': 'Nutrition search failed'}), 500
+
 def fetch_product_from_external_api(barcode):
     """
     Fetch product information from external APIs.
@@ -373,3 +554,44 @@ def fetch_product_from_external_api(barcode):
         current_app.logger.error(f"External API error: {e}")
     
     return None
+
+@api_bp.route('/user/statistics')
+@login_required
+def user_statistics():
+    """Get user activity statistics."""
+    try:
+        db_client = get_db_client()
+        
+        # Get recipes created by user
+        recipes_created = db_client.execute_query(
+            "SELECT COUNT(*) as count FROM recipes WHERE created_by_user_id = %s",
+            (current_user.id,)
+        )[0]['count']
+        
+        # Get recipes saved by user
+        recipes_saved = db_client.execute_query(
+            "SELECT COUNT(*) as count FROM user_saved_recipes WHERE user_id = %s",
+            (current_user.id,)
+        )[0]['count']
+        
+        # Get personal ingredients count
+        personal_ingredients = db_client.execute_query(
+            "SELECT COUNT(*) as count FROM user_personal_ingredients WHERE user_id = %s",
+            (current_user.id,)
+        )[0]['count']
+        
+        return jsonify({
+            'success': True,
+            'statistics': {
+                'recipes_created': recipes_created,
+                'recipes_saved': recipes_saved,
+                'personal_ingredients': personal_ingredients
+            }
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error fetching user statistics: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to fetch user statistics'
+        }), 500

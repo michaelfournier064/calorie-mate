@@ -37,10 +37,10 @@ def register():
             errors.append('Passwords do not match.')
         
         # Check if username or email already exists
-        if User.query.filter_by(username=username).first():
+        if User.get_by_username(username):
             errors.append('Username already exists.')
         
-        if User.query.filter_by(email=email).first():
+        if User.get_by_email(email):
             errors.append('Email already registered.')
         
         if errors:

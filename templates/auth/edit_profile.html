@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile - CalorieMate{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-edit me-2"></i>Edit Profile
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('auth.edit_profile') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <!-- Personal Information -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2">Personal Information</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="first_name" class="form-label">First Name</label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="first_name" 
+                                               name="first_name" 
+                                               value="{{ user.first_name or '' }}"
+                                               placeholder="Enter your first name">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="last_name" class="form-label">Last Name</label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="last_name" 
+                                               name="last_name" 
+                                               value="{{ user.last_name or '' }}"
+                                               placeholder="Enter your last name">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="bio" class="form-label">Bio</label>
+                                <textarea class="form-control" 
+                                          id="bio" 
+                                          name="bio" 
+                                          rows="3" 
+                                          placeholder="Tell us about yourself...">{{ user.bio or '' }}</textarea>
+                                <div class="form-text">Brief description about yourself (optional)</div>
+                            </div>
+                        </div>
+
+                        <!-- Nutrition Goals -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2">Nutrition Goals</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="daily_calorie_goal" class="form-label">Daily Calorie Goal</label>
+                                        <div class="input-group">
+                                            <input type="number" 
+                                                   class="form-control" 
+                                                   id="daily_calorie_goal" 
+                                                   name="daily_calorie_goal" 
+                                                   value="{{ user.daily_calorie_goal|int if user.daily_calorie_goal else '' }}"
+                                                   min="1000" 
+                                                   max="5000" 
+                                                   step="50"
+                                                   placeholder="2000">
+                                            <span class="input-group-text">calories</span>
+                                        </div>
+                                        <div class="form-text">Recommended range: 1000-5000 calories per day</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="dietary_restrictions" class="form-label">Dietary Restrictions</label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="dietary_restrictions" 
+                                               name="dietary_restrictions" 
+                                               value="{{ user.dietary_restrictions or '' }}"
+                                               placeholder="e.g., Vegetarian, Vegan, Gluten-free">
+                                        <div class="form-text">Separate multiple restrictions with commas</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Read-only Information -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2">Account Information</h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="username_readonly" class="form-label">Username</label>
+                                        <input type="text" id="username_readonly" class="form-control" value="{{ user.username }}" readonly disabled title="Username cannot be changed">
+                                        <div class="form-text">Username cannot be changed</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="email_readonly" class="form-label">Email</label>
+                                        <input type="email" id="email_readonly" class="form-control" value="{{ user.email }}" readonly disabled title="Contact support to change email">
+                                        <div class="form-text">Contact support to change email</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('auth.profile') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Back to Profile
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-secondary me-2">
+                                    <i class="fas fa-undo me-1"></i>Reset
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
