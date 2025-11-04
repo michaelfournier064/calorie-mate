@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}CalorieMate - Comprehensive Nutrition & Recipe Tracking{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container text-center">
+        <h1 class="display-3 fw-bold mb-4">
+            <i class="fas fa-utensils me-3"></i>Welcome to CalorieMate
+        </h1>
+        <p class="lead fs-4 mb-4">
+            Your comprehensive nutrition tracking and recipe management platform
+        </p>
+        <p class="fs-5 mb-5">
+            Scan barcodes, track calories, discover recipes, and manage your nutrition with professional-grade tools
+        </p>
+        <div class="hero-buttons">
+            {% if not current_user.is_authenticated %}
+            <a class="btn btn-light btn-lg me-3" href="{{ url_for('auth.register') }}">
+                <i class="fas fa-user-plus me-2"></i>Get Started Free
+            </a>
+            <a class="btn btn-outline-light btn-lg" href="{{ url_for('auth.login') }}">
+                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+            </a>
+            {% else %}
+            <a class="btn btn-light btn-lg me-3" href="{{ url_for('main.dashboard') }}">
+                <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+            </a>
+            <a class="btn btn-outline-light btn-lg" href="{{ url_for('main.barcode_scanner') }}">
+                <i class="fas fa-barcode me-2"></i>Scan Barcode
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<div class="container">
+    <!-- Key Features -->
+    <section class="mb-5">
+        <div class="row text-center mb-5">
+            <div class="col-12">
+                <h2 class="display-5 fw-bold mb-3">Everything You Need for Nutrition Management</h2>
+                <p class="lead text-muted">Professional tools designed in collaboration with health departments</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="feature-icon">
+                            <i class="fas fa-barcode"></i>
+                        </div>
+                        <h5 class="card-title">Barcode Scanner</h5>
+                        <p class="card-text">
+                            Instantly scan product barcodes to get comprehensive nutrition information. 
+                            Automatically adds new products to our shared database.
+                        </p>
+                        {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('main.barcode_scanner') }}" class="btn btn-scan">
+                            <i class="fas fa-camera me-1"></i>Start Scanning
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-scan">Try It Now</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="feature-icon">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <h5 class="card-title">Nutrition Calculator</h5>
+                        <p class="card-text">
+                            Calculate calories, macros, and serving sizes with precision. 
+                            Perfect for meal planning and dietary tracking.
+                        </p>
+                        {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('main.nutrition_calculator') }}" class="btn btn-recipe">
+                            <i class="fas fa-calculator me-1"></i>Calculate Now
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-recipe">Get Access</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <div class="feature-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <h5 class="card-title">Recipe Management</h5>
+                        <p class="card-text">
+                            Create, save, and share recipes with automatic nutrition calculations. 
+                            Community ratings and sponsored content available.
+                        </p>
+                        <a href="{{ url_for('main.recipes') }}" class="btn btn-recipe">
+                            <i class="fas fa-search me-1"></i>Browse Recipes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Statistics -->
+    <section class="mb-5">
+        <div class="row text-center">
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <h3 class="fw-bold">{{ "{:,}".format(total_recipes) }}</h3>
+                    <p class="mb-0">Recipes Available</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <h3 class="fw-bold">{{ "{:,}".format(total_products) }}</h3>
+                    <p class="mb-0">Products Scanned</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <h3 class="fw-bold">{{ "{:,}".format(total_users) }}</h3>
+                    <p class="mb-0">Active Users</p>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <h3 class="fw-bold">24/7</h3>
+                    <p class="mb-0">Available</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Featured Recipes -->
+    {% if featured_recipes %}
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold">
+                <i class="fas fa-star text-warning me-2"></i>Featured Recipes
+            </h3>
+            <a href="{{ url_for('main.recipes') }}" class="btn btn-outline-primary">
+                View All <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+        
+        <div class="row g-4">
+            {% for recipe in featured_recipes[:3] %}
+            <div class="col-md-4">
+                <div class="recipe-card card h-100">
+                    {% if recipe.image_url %}
+                    <img src="{{ recipe.image_url }}" class="card-img-top recipe-card-image" alt="{{ recipe.name }}">
+                    {% else %}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center recipe-card-placeholder">
+                        <i class="fas fa-utensils fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ recipe.name }}</h5>
+                        <p class="card-text">{{ recipe.description[:100] }}{% if recipe.description|length > 100 %}...{% endif %}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                {% if recipe.average_rating %}
+                                <i class="fas fa-star text-warning"></i> {{ "%.1f"|format(recipe.average_rating) }}
+                                ({{ recipe.rating_count }})
+                                {% else %}
+                                <i class="fas fa-clock"></i> {{ recipe.total_time_minutes or 'N/A' }} min
+                                {% endif %}
+                            </small>
+                            <a href="{{ url_for('main.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-recipe">
+                                View Recipe
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    
+    <!-- Recent Recipes -->
+    {% if recent_recipes %}
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold">
+                <i class="fas fa-clock me-2"></i>Recently Added
+            </h3>
+            <a href="{{ url_for('main.recipes') }}?sort=newest" class="btn btn-outline-secondary">
+                View All Recent <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+        
+        <div class="row g-3">
+            {% for recipe in recent_recipes[:4] %}
+            <div class="col-md-3 col-sm-6">
+                <div class="recipe-card card h-100">
+                    <div class="card-body p-3">
+                        <h6 class="card-title mb-2">{{ recipe.name }}</h6>
+                        <p class="card-text small text-muted mb-2">
+                            By {{ recipe.creator.username }}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar"></i> {{ recipe.created_at.strftime('%m/%d') }}
+                            </small>
+                            <a href="{{ url_for('main.view_recipe', recipe_id=recipe.id) }}" class="btn btn-sm btn-outline-primary">
+                                View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    
+    <!-- Call to Action -->
+    <section class="text-center py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <h3 class="fw-bold mb-3">Ready to Take Control of Your Nutrition?</h3>
+                <p class="lead mb-4">
+                    Join thousands of users who trust CalorieMate for their nutrition tracking and recipe management needs.
+                </p>
+                {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.register') }}" class="btn btn-recipe btn-lg me-3">
+                    <i class="fas fa-rocket me-2"></i>Start Your Journey
+                </a>
+                <a href="{{ url_for('main.recipes') }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-eye me-2"></i>Explore Recipes
+                </a>
+                {% else %}
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-recipe btn-lg">
+                    <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add some interactive elements
+    $(document).ready(function() {
+        // Animate stats counters
+        $('.stats-card h3').each(function() {
+            var $this = $(this);
+            var countTo = parseInt($this.text().replace(/,/g, '')) || 0;
+            
+            if (countTo > 0) {
+                $({ countNum: 0 }).animate({
+                    countNum: countTo
+                }, {
+                    duration: 2000,
+                    easing: 'linear',
+                    step: function() {
+                        $this.text(Math.floor(this.countNum).toLocaleString());
+                    },
+                    complete: function() {
+                        $this.text(this.countNum.toLocaleString());
+                    }
+                });
+            }
+        });
+        
+        // Add hover effects to recipe cards
+        $('.recipe-card').hover(
+            function() {
+                $(this).find('.btn').removeClass('btn-outline-primary').addClass('btn-recipe');
+            },
+            function() {
+                $(this).find('.btn').removeClass('btn-recipe').addClass('btn-outline-primary');
+            }
+        );
+    });
+</script>
+{% endblock %}

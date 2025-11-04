@@ -1,0 +1,56 @@
+/* CalorieMate Custom Styles */
+
+/* Homepage hero section gradient */
+.hero-gradient {
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+}
+
+.hero-divider {
+    border-color: rgba(255,255,255,0.3) !important;
+}
+
+/* Recipe card image styling */
+.recipe-card-image {
+    height: 200px;
+    object-fit: cover;
+}
+
+.recipe-card-placeholder {
+    height: 200px;
+}
+
+/* Barcode scanner specific styles */
+.scanner-hidden {
+    display: none;
+}
+
+/* Font size utility */
+.fa-small {
+    font-size: 0.5rem;
+}
+
+/* Additional component spacing and layout fixes */
+.navbar-brand {
+    font-weight: 600;
+}
+
+.btn-recipe {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border: none;
+    color: white;
+}
+
+.btn-recipe:hover {
+    background: linear-gradient(135deg, #218838, #1ea085);
+    color: white;
+}
+
+/* Alert and notification styling */
+.alert-dismissible .btn-close {
+    padding: 0.75rem 1rem;
+}
+
+/* Form enhancements */
+.input-group .btn-outline-secondary {
+    border-left: 0;
+}

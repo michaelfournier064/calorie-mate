@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Login - CalorieMate{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-sign-in-alt me-2"></i>Welcome Back
+                    </h3>
+                    <p class="mb-0 opacity-75">Sign in to your CalorieMate account</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        {{ csrf_token() }}
+                        
+                        <div class="mb-3">
+                            <label for="username_or_email" class="form-label">
+                                <i class="fas fa-user me-1"></i>Username or Email
+                            </label>
+                            <input type="text" class="form-control" id="username_or_email" 
+                                   name="username_or_email" required 
+                                   placeholder="Enter your username or email">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-1"></i>Password
+                            </label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" 
+                                       name="password" required placeholder="Enter your password">
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        onclick="togglePassword()" aria-label="Toggle password visibility">
+                                    <i class="fas fa-eye" id="password-toggle"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="remember_me" 
+                                   name="remember_me" value="1">
+                            <label class="form-check-label" for="remember_me">
+                                Remember me on this device
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-recipe btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center bg-light">
+                    <p class="mb-2">
+                        Don't have an account? 
+                        <a href="{{ url_for('auth.register') }}" class="text-decoration-none">
+                            <strong>Create one here</strong>
+                        </a>
+                    </p>
+                    <p class="mb-0">
+                        <a href="#" class="text-muted small">
+                            Forgot your password?
+                        </a>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Demo Account Info -->
+            <div class="card mt-3 border-info">
+                <div class="card-body text-center">
+                    <h6 class="text-info">
+                        <i class="fas fa-info-circle me-1"></i>Demo Access
+                    </h6>
+                    <p class="mb-0 small text-muted">
+                        New to CalorieMate? Create a free account to access barcode scanning,
+                        nutrition tracking, and recipe management features.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePassword() {
+    const passwordField = document.getElementById('password');
+    const passwordToggle = document.getElementById('password-toggle');
+    
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        passwordToggle.className = 'fas fa-eye-slash';
+    } else {
+        passwordField.type = 'password';
+        passwordToggle.className = 'fas fa-eye';
+    }
+}
+
+// Auto-focus on username field
+$(document).ready(function() {
+    $('#username_or_email').focus();
+});
+</script>
+{% endblock %}

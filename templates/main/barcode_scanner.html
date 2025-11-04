@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block title %}Barcode Scanner - CalorieMate{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-barcode me-2"></i>Barcode Scanner
+                    </h3>
+                    <p class="mb-0 opacity-75">Scan product barcodes to get instant nutrition information</p>
+                </div>
+                <div class="card-body">
+                    <!-- Scanner Interface -->
+                    <div class="scanner-container mb-4">
+                        <video id="scanner-video" autoplay muted playsinline></video>
+                        <div class="scanner-overlay"></div>
+                        <canvas id="scanner-canvas" class="scanner-hidden"></canvas>
+                    </div>
+                    
+                    <!-- Scanner Controls -->
+                    <div class="text-center mb-4">
+                        <button id="start-scanner" class="btn btn-scan btn-lg me-2">
+                            <i class="fas fa-camera me-2"></i>Start Camera
+                        </button>
+                        <button id="stop-scanner" class="btn btn-secondary btn-lg scanner-hidden">
+                            <i class="fas fa-stop me-2"></i>Stop Camera
+                        </button>
+                    </div>
+                    
+                    <!-- Manual Barcode Entry -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5><i class="fas fa-keyboard me-2"></i>Or Enter Barcode Manually</h5>
+                            <div class="input-group mb-3">
+                                <input type="text" id="manual-barcode" class="form-control" 
+                                       placeholder="Enter barcode number..." maxlength="20">
+                                <button id="lookup-barcode" class="btn btn-recipe">
+                                    <i class="fas fa-search me-1"></i>Lookup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div id="loading-state" class="text-center scanner-hidden">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Looking up product information...</p>
+                    </div>
+                    
+                    <!-- Scanner Status -->
+                    <div id="scanner-status" class="alert alert-info scanner-hidden">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span id="status-message">Ready to scan</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Product Results -->
+            <div id="product-results" class="mt-4 scanner-hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">
+                            <i class="fas fa-box me-2"></i>Product Information
+                        </h4>
+                    </div>
+                    <div class="card-body" id="product-details">
+                        <!-- Product details will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Add New Product Form -->
+            <div id="add-product-form" class="mt-4 scanner-hidden">
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <h4 class="mb-0">
+                            <i class="fas fa-plus me-2"></i>Add New Product
+                        </h4>
+                        <p class="mb-0">Product not found in database. Help the community by adding it!</p>
+                    </div>
+                    <div class="card-body">
+                        <form id="new-product-form">
+                            <input type="hidden" id="new-product-barcode">
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="product-name" class="form-label">Product Name *</label>
+                                    <input type="text" class="form-control" id="product-name" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="product-brand" class="form-label">Brand</label>
+                                    <input type="text" class="form-control" id="product-brand">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="product-category" class="form-label">Category</label>
+                                    <select class="form-control" id="product-category">
+                                        <option value="">Select category...</option>
+                                        <option value="Beverages">Beverages</option>
+                                        <option value="Dairy">Dairy</option>
+                                        <option value="Snacks">Snacks</option>
+                                        <option value="Frozen Foods">Frozen Foods</option>
+                                        <option value="Pantry">Pantry</option>
+                                        <option value="Fresh Produce">Fresh Produce</option>
+                                        <option value="Meat & Seafood">Meat & Seafood</option>
+                                        <option value="Bakery">Bakery</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="serving-size" class="form-label">Serving Size (g)</label>
+                                    <input type="number" class="form-control" id="serving-size" step="0.1" min="0">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="product-description" class="form-label">Description</label>
+                                <textarea class="form-control" id="product-description" rows="2"></textarea>
+                            </div>
+                            
+                            <!-- Nutrition Information -->
+                            <h5><i class="fas fa-chart-pie me-2"></i>Nutrition Information (per serving)</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="calories" class="form-label">Calories</label>
+                                    <input type="number" class="form-control" id="calories" step="0.1" min="0">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="protein" class="form-label">Protein (g)</label>
+                                    <input type="number" class="form-control" id="protein" step="0.1" min="0">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="carbs" class="form-label">Carbs (g)</label>
+                                    <input type="number" class="form-control" id="carbs" step="0.1" min="0">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="fat" class="form-label">Fat (g)</label>
+                                    <input type="number" class="form-control" id="fat" step="0.1" min="0">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="fiber" class="form-label">Fiber (g)</label>
+                                    <input type="number" class="form-control" id="fiber" step="0.1" min="0">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="sodium" class="form-label">Sodium (mg)</label>
+                                    <input type="number" class="form-control" id="sodium" step="0.1" min="0">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="sugars" class="form-label">Sugars (g)</label>
+                                    <input type="number" class="form-control" id="sugars" step="0.1" min="0">
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" id="cancel-add-product" class="btn btn-secondary me-md-2">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="btn btn-recipe">
+                                    <i class="fas fa-save me-1"></i>Add Product
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Scans -->
+            <div class="mt-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0">
+                            <i class="fas fa-history me-2"></i>Recent Scans
+                        </h4>
+                    </div>
+                    <div class="card-body" id="recent-scans">
+                        <p class="text-muted">Your recently scanned products will appear here.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Include QuaggaJS for barcode scanning -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+
+<script>
+let scannerActive = false;
+
+$(document).ready(function() {
+    // Check if camera is available
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        $('#scanner-status').show().removeClass('alert-info').addClass('alert-warning');
+        $('#status-message').text('Camera not available on this device. Please use manual entry.');
+        $('#start-scanner').prop('disabled', true);
+    }
+    
+    // Load recent scans
+    loadRecentScans();
+});
+
+// Start Camera Scanner
+$('#start-scanner').click(function() {
+    startBarcodeScanner();
+});
+
+// Stop Camera Scanner
+$('#stop-scanner').click(function() {
+    stopBarcodeScanner();
+});
+
+// Manual Barcode Lookup
+$('#lookup-barcode').click(function() {
+    const barcode = $('#manual-barcode').val().trim();
+    if (barcode) {
+        lookupBarcode(barcode);
+    }
+});
+
+// Enter key for manual barcode input
+$('#manual-barcode').keypress(function(e) {
+    if (e.which === 13) {
+        $('#lookup-barcode').click();
+    }
+});
+
+function startBarcodeScanner() {
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: document.querySelector('#scanner-video'),
+            constraints: {
+                width: 640,
+                height: 480,
+                facingMode: "environment"
+            }
+        },
+        locator: {
+            patchSize: "medium",
+            halfSample: true
+        },
+        numOfWorkers: 2,
+        decoder: {
+            readers: ["code_128_reader", "ean_reader", "ean_8_reader", "code_39_reader"]
+        },
+        locate: true
+    }, function(err) {
+        if (err) {
+            console.error('Scanner initialization error:', err);
+            $('#scanner-status').show().removeClass('alert-info').addClass('alert-danger');
+            $('#status-message').text('Failed to start camera. Please check permissions and try manual entry.');
+            return;
+        }
+        
+        scannerActive = true;
+        Quagga.start();
+        $('#start-scanner').hide();
+        $('#stop-scanner').show();
+        $('#scanner-status').show().removeClass('alert-danger').addClass('alert-success');
+        $('#status-message').text('Camera active. Point at a barcode to scan.');
+    });
+    
+    Quagga.onDetected(function(data) {
+        const barcode = data.codeResult.code;
+        if (barcode && barcode.length >= 8) {
+            stopBarcodeScanner();
+            lookupBarcode(barcode);
+        }
+    });
+}
+
+function stopBarcodeScanner() {
+    if (scannerActive) {
+        Quagga.stop();
+        scannerActive = false;
+        $('#start-scanner').show();
+        $('#stop-scanner').hide();
+        $('#scanner-status').hide();
+    }
+}
+
+function lookupBarcode(barcode) {
+    $('#loading-state').show();
+    $('#product-results, #add-product-form').hide();
+    
+    $.ajax({
+        url: `/api/barcode/${barcode}`,
+        method: 'GET',
+        success: function(response) {
+            $('#loading-state').hide();
+            if (response.found) {
+                displayProductInfo(response.product);
+            } else {
+                showAddProductForm(barcode);
+            }
+            loadRecentScans(); // Refresh recent scans
+        },
+        error: function(xhr) {
+            $('#loading-state').hide();
+            if (xhr.status === 404) {
+                showAddProductForm(barcode);
+            } else {
+                alert('Error looking up barcode. Please try again.');
+            }
+        }
+    });
+}
+
+function displayProductInfo(product) {
+    const nutritionInfo = product.nutrition ? `
+        <div class="nutrition-label mt-3">
+            <h6><strong>Nutrition Facts</strong></h6>
+            <hr class="my-1">
+            <div class="row">
+                <div class="col-6"><strong>Calories:</strong> ${product.nutrition.calories || 'N/A'}</div>
+                <div class="col-6"><strong>Protein:</strong> ${product.nutrition.protein_g || 'N/A'}g</div>
+            </div>
+            <div class="row">
+                <div class="col-6"><strong>Carbs:</strong> ${product.nutrition.carbohydrates_g || 'N/A'}g</div>
+                <div class="col-6"><strong>Fat:</strong> ${product.nutrition.fat_total_g || 'N/A'}g</div>
+            </div>
+        </div>
+    ` : '<p class="text-muted">Nutrition information not available.</p>';
+    
+    const productHtml = `
+        <div class="row">
+            <div class="col-md-8">
+                <h5>${product.name}</h5>
+                ${product.brand ? `<p class="text-muted">Brand: ${product.brand}</p>` : ''}
+                ${product.description ? `<p>${product.description}</p>` : ''}
+                <p><strong>Barcode:</strong> ${product.barcode}</p>
+                <p><strong>Serving Size:</strong> ${product.serving_size || 'N/A'} ${product.serving_size_unit || 'g'}</p>
+                ${nutritionInfo}
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-recipe w-100 mb-2" onclick="addToMeal(${product.id})">
+                    <i class="fas fa-plus me-1"></i>Add to Meal
+                </button>
+                <button class="btn btn-outline-primary w-100" onclick="calculateNutrition(${product.id})">
+                    <i class="fas fa-calculator me-1"></i>Calculate Nutrition
+                </button>
+            </div>
+        </div>
+    `;
+    
+    $('#product-details').html(productHtml);
+    $('#product-results').show();
+}
+
+function showAddProductForm(barcode) {
+    $('#new-product-barcode').val(barcode);
+    $('#add-product-form').show();
+    $('#product-results').hide();
+}
+
+// Handle new product form submission
+$('#new-product-form').submit(function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        barcode: $('#new-product-barcode').val(),
+        name: $('#product-name').val(),
+        brand: $('#product-brand').val() || null,
+        category: $('#product-category').val() || null,
+        description: $('#product-description').val() || null,
+        serving_size: parseFloat($('#serving-size').val()) || null,
+        nutrition: {
+            calories: parseFloat($('#calories').val()) || null,
+            protein_g: parseFloat($('#protein').val()) || null,
+            carbohydrates_g: parseFloat($('#carbs').val()) || null,
+            fat_total_g: parseFloat($('#fat').val()) || null,
+            fiber_g: parseFloat($('#fiber').val()) || null,
+            sodium_mg: parseFloat($('#sodium').val()) || null,
+            sugars_g: parseFloat($('#sugars').val()) || null
+        }
+    };
+    
+    showLoading($('#new-product-form button[type="submit"]'));
+    
+    $.ajax({
+        url: '/api/product',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(formData),
+        success: function(response) {
+            alert('Product added successfully! Thank you for contributing to the database.');
+            $('#add-product-form').hide();
+            $('#new-product-form')[0].reset();
+            loadRecentScans();
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON?.error || 'Failed to add product';
+            alert('Error: ' + error);
+        },
+        complete: function() {
+            hideLoading($('#new-product-form button[type="submit"]'), '<i class="fas fa-save me-1"></i>Add Product');
+        }
+    });
+});
+
+// Cancel add product
+$('#cancel-add-product').click(function() {
+    $('#add-product-form').hide();
+    $('#new-product-form')[0].reset();
+});
+
+function loadRecentScans() {
+    // This would load recent scans from user history
+    // For now, show placeholder
+    $('#recent-scans').html('<p class="text-muted">Scan some products to see your history here.</p>');
+}
+
+function addToMeal(productId) {
+    // Navigate to nutrition calculator with this product
+    window.location.href = `/nutrition-calculator?product_id=${productId}`;
+}
+
+function calculateNutrition(productId) {
+    // Navigate to nutrition calculator with this product
+    window.location.href = `/nutrition-calculator?product_id=${productId}`;
+}
+</script>
+{% endblock %}
