@@ -10,12 +10,21 @@
                 <h3 class="mb-0"><i class="fas fa-plus me-2"></i>Add New Recipe</h3>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <!-- Required Fields -->
                     <div class="mb-3">
                         <label for="name" class="form-label">Recipe Name *</label>
                         <input type="text" class="form-control" id="name" name="name" required 
                                placeholder="e.g., Grandma's Chocolate Chip Cookies">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="2"
+                                  placeholder="Brief description of your recipe..."></textarea>
+                        <div class="form-text">Optional: A short summary of your recipe</div>
                     </div>
 
                     <div class="mb-3">
@@ -30,6 +39,151 @@
                         <textarea class="form-control" id="instructions" name="instructions" rows="8" required
                                   placeholder="Step-by-step cooking instructions:&#10;1. Preheat oven to 350°F&#10;2. Mix dry ingredients in a bowl&#10;3. Cream butter and sugar&#10;4. Add eggs and vanilla&#10;5. Combine wet and dry ingredients&#10;6. Bake for 10-12 minutes"></textarea>
                         <div class="form-text">Write clear, step-by-step instructions</div>
+                    </div>
+
+                    <!-- Time and Serving Information -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="prep_time" class="form-label">Prep Time (minutes)</label>
+                            <input type="number" class="form-control" id="prep_time" name="prep_time" min="0"
+                                   placeholder="15">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="cook_time" class="form-label">Cook Time (minutes)</label>
+                            <input type="number" class="form-control" id="cook_time" name="cook_time" min="0"
+                                   placeholder="30">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="servings" class="form-label">Servings</label>
+                            <input type="number" class="form-control" id="servings" name="servings" min="1" 
+                                   placeholder="4" value="1">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="difficulty_level" class="form-label">Difficulty</label>
+                            <select class="form-select" id="difficulty_level" name="difficulty_level">
+                                <option value="">Select Difficulty</option>
+                                <option value="Easy">Easy</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Hard">Hard</option>
+                                <option value="Expert">Expert</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Recipe Categories -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">Select Category</option>
+                                <option value="Appetizer">Appetizer</option>
+                                <option value="Main Course">Main Course</option>
+                                <option value="Side Dish">Side Dish</option>
+                                <option value="Dessert">Dessert</option>
+                                <option value="Breakfast">Breakfast</option>
+                                <option value="Lunch">Lunch</option>
+                                <option value="Dinner">Dinner</option>
+                                <option value="Snack">Snack</option>
+                                <option value="Beverage">Beverage</option>
+                                <option value="Sauce">Sauce</option>
+                                <option value="Soup">Soup</option>
+                                <option value="Salad">Salad</option>
+                                <option value="Bread">Bread</option>
+                                <option value="Pasta">Pasta</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cuisine_type" class="form-label">Cuisine Type</label>
+                            <select class="form-select" id="cuisine_type" name="cuisine_type">
+                                <option value="">Select Cuisine</option>
+                                <option value="American">American</option>
+                                <option value="Italian">Italian</option>
+                                <option value="Mexican">Mexican</option>
+                                <option value="Chinese">Chinese</option>
+                                <option value="Indian">Indian</option>
+                                <option value="French">French</option>
+                                <option value="Japanese">Japanese</option>
+                                <option value="Thai">Thai</option>
+                                <option value="Mediterranean">Mediterranean</option>
+                                <option value="Korean">Korean</option>
+                                <option value="Greek">Greek</option>
+                                <option value="Spanish">Spanish</option>
+                                <option value="German">German</option>
+                                <option value="British">British</option>
+                                <option value="Middle Eastern">Middle Eastern</option>
+                                <option value="African">African</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Dietary Tags -->
+                    <div class="mb-3">
+                        <label class="form-label">Dietary Tags</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="vegetarian" name="dietary_tags" value="vegetarian">
+                                    <label class="form-check-label" for="vegetarian">Vegetarian</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="vegan" name="dietary_tags" value="vegan">
+                                    <label class="form-check-label" for="vegan">Vegan</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="gluten_free" name="dietary_tags" value="gluten_free">
+                                    <label class="form-check-label" for="gluten_free">Gluten-Free</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="dairy_free" name="dietary_tags" value="dairy_free">
+                                    <label class="form-check-label" for="dairy_free">Dairy-Free</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="low_carb" name="dietary_tags" value="low_carb">
+                                    <label class="form-check-label" for="low_carb">Low Carb</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="keto" name="dietary_tags" value="keto">
+                                    <label class="form-check-label" for="keto">Keto</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="paleo" name="dietary_tags" value="paleo">
+                                    <label class="form-check-label" for="paleo">Paleo</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="low_sodium" name="dietary_tags" value="low_sodium">
+                                    <label class="form-check-label" for="low_sodium">Low Sodium</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Media -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="image_url" class="form-label">Recipe Image URL</label>
+                            <input type="url" class="form-control" id="image_url" name="image_url"
+                                   placeholder="https://example.com/recipe-photo.jpg">
+                            <div class="form-text">Optional: Link to a photo of your recipe</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="video_url" class="form-label">Recipe Video URL</label>
+                            <input type="url" class="form-control" id="video_url" name="video_url"
+                                   placeholder="https://youtube.com/watch?v=...">
+                            <div class="form-text">Optional: Link to a cooking video</div>
+                        </div>
+                    </div>
+
+                    <!-- Visibility -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_public" name="is_public" checked>
+                            <label class="form-check-label" for="is_public">
+                                Make this recipe public (visible to other users)
+                            </label>
+                        </div>
                     </div>
 
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -56,5 +210,58 @@
             this.style.height = this.scrollHeight + 'px';
         });
     });
+
+    // Auto-calculate total time
+    function updateTotalTime() {
+        const prepTime = parseInt(document.getElementById('prep_time').value) || 0;
+        const cookTime = parseInt(document.getElementById('cook_time').value) || 0;
+        const totalTime = prepTime + cookTime;
+        
+        // Display total time (you could add a display field if desired)
+        if (totalTime > 0) {
+            console.log(`Total time: ${totalTime} minutes`);
+        }
+    }
+
+    document.getElementById('prep_time').addEventListener('input', updateTotalTime);
+    document.getElementById('cook_time').addEventListener('input', updateTotalTime);
+
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        const ingredients = document.getElementById('ingredients').value.trim();
+        const instructions = document.getElementById('instructions').value.trim();
+
+        if (!name || !ingredients || !instructions) {
+            e.preventDefault();
+            alert('Please fill in all required fields (Name, Ingredients, and Instructions).');
+            return false;
+        }
+
+        // Validate URLs if provided
+        const imageUrl = document.getElementById('image_url').value.trim();
+        const videoUrl = document.getElementById('video_url').value.trim();
+        
+        if (imageUrl && !isValidUrl(imageUrl)) {
+            e.preventDefault();
+            alert('Please enter a valid image URL.');
+            return false;
+        }
+        
+        if (videoUrl && !isValidUrl(videoUrl)) {
+            e.preventDefault();
+            alert('Please enter a valid video URL.');
+            return false;
+        }
+    });
+
+    function isValidUrl(string) {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
 </script>
 {% endblock %}

@@ -160,13 +160,34 @@ def view_recipe(recipe_id):
 def add_recipe():
     """Add new recipe form."""
     if request.method == 'POST':
-        # Get form data
+        # Get form data - Required fields
         name = request.form.get('name', '').strip()
         ingredients = request.form.get('ingredients', '').strip()
         instructions = request.form.get('instructions', '').strip()
+        
+        # Get form data - Optional fields
+        description = request.form.get('description', '').strip()
         prep_time = request.form.get('prep_time', '')
         cook_time = request.form.get('cook_time', '')
         servings = request.form.get('servings', '')
+        difficulty_level = request.form.get('difficulty_level', '')
+        category = request.form.get('category', '')
+        cuisine_type = request.form.get('cuisine_type', '')
+        image_url = request.form.get('image_url', '').strip()
+        video_url = request.form.get('video_url', '').strip()
+        is_public = bool(request.form.get('is_public'))
+        
+        # Process dietary tags (multiple checkboxes)
+        dietary_tags = request.form.getlist('dietary_tags')
+        dietary_tags_json = dietary_tags if dietary_tags else None
+        
+        # Calculate total time if both prep and cook times are provided
+        total_time = None
+        if prep_time and cook_time:
+            try:
+                total_time = int(prep_time) + int(cook_time)
+            except ValueError:
+                pass
         
         # Validate required fields
         if not name or not ingredients or not instructions:
@@ -174,15 +195,24 @@ def add_recipe():
             return render_template('add_recipe.html')
         
         try:
-            # Create the recipe using the correct method signature
+            # Create the recipe with all available fields
             recipe = Recipe.create(
                 name=name,
                 created_by_user_id=current_user.id,
+                description=description if description else None,
                 ingredients=ingredients,
                 instructions=instructions,
                 prep_time_minutes=int(prep_time) if prep_time else None,
                 cook_time_minutes=int(cook_time) if cook_time else None,
-                servings=int(servings) if servings else None
+                total_time_minutes=total_time,
+                servings=int(servings) if servings else 1,
+                difficulty_level=difficulty_level if difficulty_level else None,
+                category=category if category else None,
+                cuisine_type=cuisine_type if cuisine_type else None,
+                dietary_tags=dietary_tags_json,
+                image_url=image_url if image_url else None,
+                video_url=video_url if video_url else None,
+                is_public=is_public
             )
             
             if recipe and recipe.id:

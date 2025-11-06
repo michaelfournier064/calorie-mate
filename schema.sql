@@ -112,6 +112,8 @@ CREATE TABLE IF NOT EXISTS recipes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
     description TEXT,
+    ingredients TEXT,
+    instructions TEXT,
     prep_time_minutes INT,
     cook_time_minutes INT,
     total_time_minutes INT,

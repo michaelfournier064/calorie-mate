@@ -498,6 +498,8 @@ class Recipe:
     
     def __init__(self, **kwargs):
         """Initialize Recipe instance from database row or kwargs."""
+        import json
+        
         self.id = kwargs.get('id')
         self.name = kwargs.get('name')
         self.description = kwargs.get('description')
@@ -510,7 +512,17 @@ class Recipe:
         self.difficulty_level = kwargs.get('difficulty_level')
         self.category = kwargs.get('category')
         self.cuisine_type = kwargs.get('cuisine_type')
-        self.dietary_tags = kwargs.get('dietary_tags')
+        
+        # Handle JSON dietary_tags field
+        dietary_tags = kwargs.get('dietary_tags')
+        if isinstance(dietary_tags, str):
+            try:
+                self.dietary_tags = json.loads(dietary_tags)
+            except (json.JSONDecodeError, TypeError):
+                self.dietary_tags = None
+        else:
+            self.dietary_tags = dietary_tags
+            
         self.image_url = kwargs.get('image_url')
         self.video_url = kwargs.get('video_url')
         self.is_public = kwargs.get('is_public', True)

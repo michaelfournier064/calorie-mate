@@ -46,7 +46,14 @@ class DatabasePool:
             # Try to get existing connection
             conn = self._pool.get_nowait()
             if conn.open:
-                return conn
+                # Verify connection is still alive with a simple ping
+                try:
+                    conn.ping(reconnect=False)
+                    return conn
+                except:
+                    # Connection is stale, close it and create new one
+                    conn.close()
+                    return pymysql.connect(**self.connection_config)
             else:
                 # Connection is closed, create new one
                 return pymysql.connect(**self.connection_config)
@@ -58,12 +65,25 @@ class DatabasePool:
         """Return a connection to the pool."""
         if conn and conn.open:
             try:
+                # Reset connection state before returning to pool
+                conn.rollback()  # Ensure any uncommitted transactions are rolled back
+                # Reset any session variables if needed
                 self._pool.put_nowait(conn)
             except:
-                # Pool is full, close the connection
+                # Pool is full or connection error, close the connection
                 conn.close()
         elif conn:
             conn.close()
+    
+    def clear_pool(self):
+        """Clear all connections from the pool."""
+        while not self._pool.empty():
+            try:
+                conn = self._pool.get_nowait()
+                if conn:
+                    conn.close()
+            except Empty:
+                break
 
 
 class DatabaseClient:
@@ -142,9 +162,13 @@ class DatabaseClient:
     def execute_query(self, query: str, params: tuple = None) -> List[Dict[str, Any]]:
         """Execute a SELECT query and return results."""
         with self.get_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(query, params or ())
-                return cursor.fetchall()
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, params or ())
+                    return cursor.fetchall()
+            finally:
+                # Ensure any uncommitted changes are rolled back for read operations
+                conn.rollback()
     
     def execute_insert(self, query: str, params: tuple = None) -> int:
         """Execute INSERT query and return the last inserted ID."""
@@ -163,7 +187,7 @@ class DatabaseClient:
     def execute_ddl(self, statement: str) -> bool:
         """Execute DDL statement (CREATE, ALTER, DROP, etc.) without parameters."""
         try:
-            with self.get_connection() as conn:
+            with self.transaction() as conn:
                 with conn.cursor() as cursor:
                     # Execute DDL statement directly without parameter formatting
                     cursor.execute(statement)
@@ -192,9 +216,13 @@ class DatabaseClient:
     def fetch_one(self, query: str, params: tuple = None) -> Optional[Dict[str, Any]]:
         """Execute query and return single row or None."""
         with self.get_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(query, params or ())
-                return cursor.fetchone()
+            try:
+                with conn.cursor() as cursor:
+                    cursor.execute(query, params or ())
+                    return cursor.fetchone()
+            finally:
+                # Ensure any uncommitted changes are rolled back for read operations
+                conn.rollback()
     
     def fetch_paginated(self, query: str, params: tuple = None, page: int = 1, per_page: int = 20) -> Dict[str, Any]:
         """Execute paginated query and return results with pagination info."""
@@ -244,6 +272,8 @@ class DatabaseClient:
     
     def insert_record(self, table: str, data: Dict[str, Any]) -> int:
         """Insert a record into table and return the ID."""
+        import json
+        
         if not data:
             raise ValueError("Data cannot be empty")
         
@@ -251,17 +281,30 @@ class DatabaseClient:
         if 'created_at' not in data and self.table_has_column(table, 'created_at'):
             data['created_at'] = datetime.utcnow()
         
-        columns = list(data.keys())
+        # Process data to handle JSON fields
+        processed_data = {}
+        for key, value in data.items():
+            if value is None:
+                processed_data[key] = None
+            elif isinstance(value, (list, dict)):
+                # Serialize JSON fields
+                processed_data[key] = json.dumps(value)
+            else:
+                processed_data[key] = value
+        
+        columns = list(processed_data.keys())
         placeholders = ', '.join(['%s'] * len(columns))
         column_names = ', '.join(columns)
         
         query = f"INSERT INTO {table} ({column_names}) VALUES ({placeholders})"
-        params = tuple(data.values())
+        params = tuple(processed_data.values())
         
         return self.execute_insert(query, params)
     
     def update_record(self, table: str, data: Dict[str, Any], conditions: Dict[str, Any]) -> int:
         """Update records in table based on conditions."""
+        import json
+        
         if not data:
             raise ValueError("Data cannot be empty")
         if not conditions:
@@ -271,13 +314,24 @@ class DatabaseClient:
         if 'updated_at' not in data and self.table_has_column(table, 'updated_at'):
             data['updated_at'] = datetime.utcnow()
         
-        set_parts = [f"{key} = %s" for key in data.keys()]
+        # Process data to handle JSON fields
+        processed_data = {}
+        for key, value in data.items():
+            if value is None:
+                processed_data[key] = None
+            elif isinstance(value, (list, dict)):
+                # Serialize JSON fields
+                processed_data[key] = json.dumps(value)
+            else:
+                processed_data[key] = value
+        
+        set_parts = [f"{key} = %s" for key in processed_data.keys()]
         set_clause = ", ".join(set_parts)
         
         where_clause, where_params = self.build_where_clause(conditions)
         
         query = f"UPDATE {table} SET {set_clause}{where_clause}"
-        params = tuple(data.values()) + where_params
+        params = tuple(processed_data.values()) + where_params
         
         return self.execute_update(query, params)
     
@@ -337,6 +391,9 @@ db_client = None
 def init_db_client(database_uri: str = None):
     """Initialize global database client."""
     global db_client
+    # Clear any existing client and its connections
+    if db_client and hasattr(db_client, 'pool'):
+        db_client.pool.clear_pool()
     db_client = DatabaseClient(database_uri)
     return db_client
 

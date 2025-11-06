@@ -46,8 +46,9 @@ def create_app():
     
     # Initialize database client
     with app.app_context():
-        # The database client will auto-initialize when first used
-        pass
+        from db_client import init_db_client
+        database_uri = app.config.get('DATABASE_URI') or os.getenv('DATABASE_URI')
+        init_db_client(database_uri)
     
     # Register blueprints
     from routes.auth import auth_bp
