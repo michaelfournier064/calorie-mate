@@ -45,6 +45,11 @@
                                         <i class="fas fa-list me-1"></i>My Ingredients
                                     </button>
                                 </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="public-ingredients-tab" data-bs-toggle="tab" data-bs-target="#public-ingredients-pane" type="button" role="tab">
+                                        <i class="fas fa-globe me-1"></i>Public Ingredients
+                                    </button>
+                                </li>
                             </ul>
                             
                             <!-- Tab Content -->
@@ -84,10 +89,27 @@
                                     <div class="mb-4">
                                         <label class="form-label">Your Personal Ingredients</label>
                                         <button type="button" id="load-ingredients-btn" class="btn btn-outline-primary btn-sm mb-2">
-                                            <i class="fas fa-sync me-1"></i>Load Ingredients
+                                            <i class="fas fa-sync me-1"></i>Load My Ingredients
                                         </button>
                                         <div id="ingredients-results" class="mt-2">
-                                            <p class="text-muted text-center">Click "Load Ingredients" to view your personal ingredients.</p>
+                                            <p class="text-muted text-center">Click "Load My Ingredients" to view your personal ingredients.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Public Ingredients Tab -->
+                                <div class="tab-pane fade" id="public-ingredients-pane" role="tabpanel">
+                                    <div class="mb-4">
+                                        <label for="public-ingredient-search" class="form-label">Search Public Ingredients</label>
+                                        <div class="input-group">
+                                            <input type="text" id="public-ingredient-search" class="form-control" 
+                                                   placeholder="Search public ingredients by name, brand, or category...">
+                                            <button type="button" id="search-public-ingredients-btn" class="btn btn-outline-primary" title="Search public ingredients">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                        <div id="public-ingredients-results" class="mt-2">
+                                            <p class="text-muted text-center">Search for ingredients shared by other users.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -324,6 +346,17 @@ $('#load-ingredients-btn').click(function() {
     loadPersonalIngredients();
 });
 
+// Public ingredients search functionality
+$('#search-public-ingredients-btn').click(function() {
+    searchPublicIngredients();
+});
+
+$('#public-ingredient-search').keypress(function(e) {
+    if (e.which === 13) {
+        searchPublicIngredients();
+    }
+});
+
 function searchProducts() {
     const query = $('#product-search').val().trim();
     if (!query) return;
@@ -442,7 +475,7 @@ function loadPersonalIngredients() {
             $('#ingredients-results').html('<div class="alert alert-warning">Failed to load ingredients. Please try again.</div>');
         },
         complete: function() {
-            hideLoading($('#load-ingredients-btn'), '<i class="fas fa-sync me-1"></i>Load Ingredients');
+            hideLoading($('#load-ingredients-btn'), '<i class="fas fa-sync me-1"></i>Load My Ingredients');
         }
     });
 }
@@ -476,6 +509,67 @@ function displayIngredientResults(ingredients) {
     html += '</div>';
     
     $('#ingredients-results').html(html);
+}
+
+function searchPublicIngredients() {
+    const query = $('#public-ingredient-search').val().trim();
+    
+    showLoading($('#search-public-ingredients-btn'));
+    
+    const url = query 
+        ? `/api/ingredients/public?q=${encodeURIComponent(query)}`
+        : '/api/ingredients/public';
+    
+    $.ajax({
+        url: url,
+        method: 'GET',
+        success: function(response) {
+            displayPublicIngredientResults(response.ingredients || []);
+        },
+        error: function() {
+            $('#public-ingredients-results').html('<div class="alert alert-warning">Failed to search public ingredients. Please try again.</div>');
+        },
+        complete: function() {
+            hideLoading($('#search-public-ingredients-btn'), '<i class="fas fa-search"></i>');
+        }
+    });
+}
+
+function displayPublicIngredientResults(ingredients) {
+    if (ingredients.length === 0) {
+        $('#public-ingredients-results').html('<div class="alert alert-info">No public ingredients found. Try a different search term or check back later.</div>');
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    ingredients.forEach(ing => {
+        html += `
+            <div class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">
+                            ${ing.name}
+                            <span class="badge bg-success ms-2" title="Public ingredient shared by another user">
+                                <i class="fas fa-globe"></i> Public
+                            </span>
+                        </h6>
+                        ${ing.brand ? `<p class="mb-1 text-muted">${ing.brand}</p>` : ''}
+                        ${ing.category ? `<span class="badge bg-secondary mb-1">${ing.category}</span>` : ''}
+                        <small class="d-block mt-1">
+                            Calories: ${ing.calories || 0} per 100g | 
+                            P: ${ing.protein || 0}g | C: ${ing.carbs || 0}g | F: ${ing.fat || 0}g
+                        </small>
+                    </div>
+                    <button class="btn btn-sm btn-success" onclick="addIngredientToMeal(${ing.id}, '${ing.name.replace(/'/g, "\\'")}', ${ing.calories || 0}, ${ing.protein || 0}, ${ing.carbs || 0}, ${ing.fat || 0})">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    $('#public-ingredients-results').html(html);
 }
 
 // Manual entry form

@@ -293,6 +293,9 @@ CREATE TABLE IF NOT EXISTS user_personal_ingredients (
     carbs_per_100g DECIMAL(8,2),
     fat_per_100g DECIMAL(8,2),
     
+    -- Public accessibility
+    is_public BOOLEAN NOT NULL DEFAULT FALSE,
+    
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     

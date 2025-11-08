@@ -31,10 +31,25 @@
                         </button>
                     </div>
                     
-                    <!-- Manual Barcode Entry -->
-                    <div class="row">
-                        <div class="col-12">
-                            <h5><i class="fas fa-keyboard me-2"></i>Or Enter Barcode Manually</h5>
+                    <!-- Tabs for Barcode/Ingredient Entry -->
+                    <ul class="nav nav-tabs mb-3" id="entryTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="barcode-tab" data-bs-toggle="tab" data-bs-target="#barcode-pane" type="button" role="tab">
+                                <i class="fas fa-barcode me-1"></i>Barcode Lookup
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="ingredient-tab" data-bs-toggle="tab" data-bs-target="#ingredient-pane" type="button" role="tab">
+                                <i class="fas fa-list me-1"></i>Add Ingredient
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="entryTabContent">
+                        <!-- Barcode Tab -->
+                        <div class="tab-pane fade show active" id="barcode-pane" role="tabpanel">
+                            <h5><i class="fas fa-keyboard me-2"></i>Enter Barcode Manually</h5>
                             <div class="input-group mb-3">
                                 <input type="text" id="manual-barcode" class="form-control" 
                                        placeholder="Enter barcode number..." maxlength="20">
@@ -42,6 +57,87 @@
                                     <i class="fas fa-search me-1"></i>Lookup
                                 </button>
                             </div>
+                        </div>
+                        
+                        <!-- Manual Ingredient Entry Tab -->
+                        <div class="tab-pane fade" id="ingredient-pane" role="tabpanel">
+                            <h5><i class="fas fa-plus-circle me-2"></i>Add Personal Ingredient</h5>
+                            <form id="manual-ingredient-form">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="manual-ingredient-name" class="form-label">Ingredient Name *</label>
+                                        <input type="text" class="form-control" id="manual-ingredient-name" name="name" required placeholder="e.g., Organic Chicken Breast">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="manual-ingredient-brand" class="form-label">Brand (Optional)</label>
+                                        <input type="text" class="form-control" id="manual-ingredient-brand" name="brand" placeholder="e.g., Brand Name">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="manual-ingredient-category" class="form-label">Category</label>
+                                        <select class="form-select" id="manual-ingredient-category" name="category">
+                                            <option value="">Select Category</option>
+                                            <option value="Fruits">Fruits</option>
+                                            <option value="Vegetables">Vegetables</option>
+                                            <option value="Grains">Grains</option>
+                                            <option value="Proteins">Proteins</option>
+                                            <option value="Dairy">Dairy</option>
+                                            <option value="Snacks">Snacks</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="manual-ingredient-description" class="form-label">Description (Optional)</label>
+                                        <input type="text" class="form-control" id="manual-ingredient-description" name="description" placeholder="Brief description...">
+                                    </div>
+                                </div>
+                                
+                                <div class="card bg-light mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Nutrition per 100g (Optional)</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3 mb-3">
+                                                <label for="manual-ingredient-calories" class="form-label">Calories</label>
+                                                <input type="number" class="form-control" id="manual-ingredient-calories" name="calories_per_100g" step="0.01" min="0" placeholder="e.g., 250">
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label for="manual-ingredient-protein" class="form-label">Protein (g)</label>
+                                                <input type="number" class="form-control" id="manual-ingredient-protein" name="protein_per_100g" step="0.01" min="0" placeholder="e.g., 20.5">
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label for="manual-ingredient-carbs" class="form-label">Carbs (g)</label>
+                                                <input type="number" class="form-control" id="manual-ingredient-carbs" name="carbs_per_100g" step="0.01" min="0" placeholder="e.g., 30.0">
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label for="manual-ingredient-fat" class="form-label">Fat (g)</label>
+                                                <input type="number" class="form-control" id="manual-ingredient-fat" name="fat_per_100g" step="0.01" min="0" placeholder="e.g., 10.0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="manual-ingredient-public" name="is_public" value="true">
+                                        <label class="form-check-label" for="manual-ingredient-public">
+                                            <i class="fas fa-globe me-1"></i>Make this ingredient publicly accessible
+                                            <small class="text-muted d-block">Other users will be able to use this ingredient in their nutrition calculator</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('manual-ingredient-form').reset()">
+                                        <i class="fas fa-redo me-1"></i>Clear
+                                    </button>
+                                    <button type="submit" class="btn btn-recipe">
+                                        <i class="fas fa-save me-1"></i>Add to My Ingredients
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                     
@@ -433,5 +529,71 @@ function calculateNutrition(productId) {
     // Navigate to nutrition calculator with this product
     window.location.href = `/nutrition-calculator?product_id=${productId}`;
 }
+
+// Manual Ingredient Form Submission
+$('#manual-ingredient-form').submit(function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {};
+    
+    // Process form data and handle empty values
+    for (let [key, value] of formData.entries()) {
+        // Convert empty strings to null for optional fields (except name which is required)
+        if (key !== 'name' && (!value || value.trim() === '')) {
+            data[key] = null;
+        } else {
+            data[key] = value;
+        }
+    }
+    
+    // Validate required field
+    if (!data.name || data.name.trim() === '') {
+        alert('Ingredient name is required');
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = $(this).find('button[type="submit"]');
+    const originalText = submitBtn.html();
+    submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Adding...');
+    
+    // Debug logging
+    console.log('Submitting ingredient data:', data);
+    
+    $.ajax({
+        url: '/api/personal-ingredients',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                alert('Ingredient added successfully! You can find it in "My Ingredients" or use it in the Nutrition Calculator.');
+                $('#manual-ingredient-form')[0].reset();
+                // Optionally switch back to barcode tab
+                $('#barcode-tab').tab('show');
+            } else {
+                alert('Error adding ingredient: ' + (response.message || 'Unknown error'));
+            }
+        },
+        error: function(xhr) {
+            let errorMsg = 'Failed to add ingredient';
+            if (xhr.responseJSON) {
+                errorMsg = xhr.responseJSON.message || xhr.responseJSON.error || errorMsg;
+            } else if (xhr.status === 401) {
+                errorMsg = 'Please log in to add ingredients';
+            } else if (xhr.status === 400) {
+                errorMsg = 'Invalid data. Please check your input.';
+            }
+            console.error('Error details:', xhr);
+            alert('Error: ' + errorMsg);
+        },
+        complete: function() {
+            submitBtn.prop('disabled', false).html(originalText);
+        }
+    });
+});
 </script>
 {% endblock %}

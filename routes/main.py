@@ -145,8 +145,12 @@ def view_recipe(recipe_id):
         user_rating = None
         recent_ratings = []
         
+        # Get nutrition data
+        nutrition = recipe.get_nutrition()
+        
         return render_template('view_recipe.html',
                              recipe=recipe,
+                             nutrition=nutrition,
                              is_saved=is_saved,
                              user_rating=user_rating,
                              recent_ratings=recent_ratings)

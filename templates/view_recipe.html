@@ -53,6 +53,95 @@
                 
                 <hr class="my-4">
                 
+                <!-- Nutrition Facts -->
+                {% if nutrition and (nutrition.calories_per_serving or nutrition.protein_g or nutrition.carbohydrates_g or nutrition.fat_total_g or nutrition.fiber_g or nutrition.sugars_g or nutrition.sodium_mg) %}
+                <div class="mb-4">
+                    <h4><i class="fas fa-chart-pie me-2"></i>Nutrition Facts</h4>
+                    <div class="card nutrition-label">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Per Serving</h5>
+                                    {% if nutrition.calories_per_serving %}
+                                    <div class="nutrition-item mb-2">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong>Calories</strong>
+                                            <strong>{{ "%.0f"|format(nutrition.calories_per_serving) }}</strong>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <hr class="my-2">
+                                    
+                                    {% if nutrition.fat_total_g %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Total Fat</span>
+                                            <span>{{ "%.1f"|format(nutrition.fat_total_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.protein_g %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Protein</span>
+                                            <span>{{ "%.1f"|format(nutrition.protein_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.carbohydrates_g %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Total Carbohydrates</span>
+                                            <span>{{ "%.1f"|format(nutrition.carbohydrates_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.fiber_g %}
+                                    <div class="nutrition-item mb-1 ms-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Dietary Fiber</span>
+                                            <span>{{ "%.1f"|format(nutrition.fiber_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.sugars_g %}
+                                    <div class="nutrition-item mb-1 ms-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Total Sugars</span>
+                                            <span>{{ "%.1f"|format(nutrition.sugars_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.sodium_mg %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Sodium</span>
+                                            <span>{{ "%.0f"|format(nutrition.sodium_mg) }}mg</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted small">
+                                        <p><strong>Servings:</strong> {{ recipe.servings or 1 }}</p>
+                                        {% if recipe.description %}
+                                        <p class="mt-2">{{ recipe.description }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr class="my-4">
+                {% endif %}
+                
                 <div class="row text-center">
                     <div class="col-md-4">
                         <div class="card bg-light">
@@ -68,7 +157,7 @@
                             <div class="card-body">
                                 <i class="fas fa-clock fa-2x text-success mb-2"></i>
                                 <h6>Last Updated</h6>
-                                <p class="text-muted mb-0">{{ recipe.created_at.strftime('%B %d, %Y') }}</p>
+                                <p class="text-muted mb-0">{{ recipe.updated_at.strftime('%B %d, %Y') if recipe.updated_at else recipe.created_at.strftime('%B %d, %Y') }}</p>
                             </div>
                         </div>
                     </div>
@@ -112,6 +201,25 @@
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.nutrition-label {
+    background: white;
+    border: 2px solid #333;
+    border-radius: 8px;
+    font-family: 'Arial', sans-serif;
+}
+
+.nutrition-item {
+    font-size: 0.95rem;
+}
+
+.nutrition-label h5 {
+    font-weight: bold;
+    color: #333;
+    border-bottom: 2px solid #333;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
 }
 </style>
 

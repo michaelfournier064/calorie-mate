@@ -599,11 +599,12 @@ def search_recipes_api():
 @api_bp.route('/ingredients/personal')
 @login_required
 def get_personal_ingredients():
-    """Get user's personal ingredients for nutrition calculator."""
+    """Get user's own personal ingredients only."""
     try:
         db_client = get_db_client()
+        # Get only user's own ingredients
         ingredients = db_client.execute_query(
-            "SELECT * FROM user_personal_ingredients WHERE user_id = %s ORDER BY name",
+            "SELECT * FROM user_personal_ingredients WHERE user_id = %s ORDER BY name ASC",
             (current_user.id,)
         )
         
@@ -618,7 +619,8 @@ def get_personal_ingredients():
                 'calories': round((ing.get('calories_per_100g') or 0), 1),
                 'protein': round((ing.get('protein_per_100g') or 0), 1),
                 'carbs': round((ing.get('carbs_per_100g') or 0), 1),
-                'fat': round((ing.get('fat_per_100g') or 0), 1)
+                'fat': round((ing.get('fat_per_100g') or 0), 1),
+                'is_public': bool(ing.get('is_public', False))
             })
         
         return jsonify({'ingredients': ingredient_list})
@@ -626,6 +628,258 @@ def get_personal_ingredients():
     except Exception as e:
         current_app.logger.error(f"Get personal ingredients error: {e}")
         return jsonify({'error': 'Failed to get personal ingredients'}), 500
+
+@api_bp.route('/ingredients/public')
+@login_required
+def search_public_ingredients():
+    """Search for public ingredients from all users."""
+    try:
+        query = request.args.get('q', '').strip()
+        db_client = get_db_client()
+        
+        if query:
+            # Search public ingredients by name, brand, or category
+            ingredients = db_client.execute_query(
+                """SELECT * FROM user_personal_ingredients 
+                   WHERE is_public = 1 AND user_id != %s
+                   AND (name LIKE %s OR brand LIKE %s OR category LIKE %s)
+                   ORDER BY name ASC
+                   LIMIT 50""",
+                (current_user.id, f'%{query}%', f'%{query}%', f'%{query}%')
+            )
+        else:
+            # Get all public ingredients (limit to 50)
+            ingredients = db_client.execute_query(
+                """SELECT * FROM user_personal_ingredients 
+                   WHERE is_public = 1 AND user_id != %s
+                   ORDER BY name ASC
+                   LIMIT 50""",
+                (current_user.id,)
+            )
+        
+        ingredient_list = []
+        for ing in ingredients:
+            ingredient_list.append({
+                'id': ing['id'],
+                'name': ing['name'],
+                'brand': ing.get('brand'),
+                'category': ing.get('category'),
+                'calories': round((ing.get('calories_per_100g') or 0), 1),
+                'protein': round((ing.get('protein_per_100g') or 0), 1),
+                'carbs': round((ing.get('carbs_per_100g') or 0), 1),
+                'fat': round((ing.get('fat_per_100g') or 0), 1)
+            })
+        
+        return jsonify({'ingredients': ingredient_list})
+    
+    except Exception as e:
+        current_app.logger.error(f"Search public ingredients error: {e}")
+        return jsonify({'error': 'Failed to search public ingredients'}), 500
+
+@api_bp.route('/personal-ingredients', methods=['POST'])
+@login_required
+def add_personal_ingredient():
+    """Add a new personal ingredient."""
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data.get('name'):
+            return jsonify({'success': False, 'message': 'Ingredient name is required'}), 400
+        
+        db_client = get_db_client()
+        
+        # Prepare ingredient data
+        ingredient_data = {
+            'user_id': current_user.id,
+            'name': data.get('name', '').strip()
+        }
+        
+        # Handle optional fields safely
+        brand = data.get('brand')
+        if brand and isinstance(brand, str) and brand.strip():
+            ingredient_data['brand'] = brand.strip()
+        else:
+            ingredient_data['brand'] = None
+            
+        description = data.get('description')
+        if description and isinstance(description, str) and description.strip():
+            ingredient_data['description'] = description.strip()
+        else:
+            ingredient_data['description'] = None
+            
+        category = data.get('category')
+        if category and isinstance(category, str) and category.strip():
+            ingredient_data['category'] = category.strip()
+        else:
+            ingredient_data['category'] = None
+        
+        # Handle nutrition values
+        def safe_float(value):
+            if value is None or value == '':
+                return None
+            try:
+                return float(value)
+            except (ValueError, TypeError):
+                return None
+        
+        ingredient_data['calories_per_100g'] = safe_float(data.get('calories_per_100g'))
+        ingredient_data['protein_per_100g'] = safe_float(data.get('protein_per_100g'))
+        ingredient_data['carbs_per_100g'] = safe_float(data.get('carbs_per_100g'))
+        ingredient_data['fat_per_100g'] = safe_float(data.get('fat_per_100g'))
+        
+        # Handle is_public field
+        is_public = data.get('is_public', False)
+        if isinstance(is_public, str):
+            is_public = is_public.lower() in ('true', '1', 'yes', 'on')
+        ingredient_data['is_public'] = bool(is_public)
+        
+        # Insert the ingredient
+        ingredient_id = db_client.insert_record('user_personal_ingredients', ingredient_data)
+        
+        if ingredient_id:
+            return jsonify({
+                'success': True,
+                'message': 'Ingredient added successfully',
+                'ingredient_id': ingredient_id
+            })
+        else:
+            return jsonify({'success': False, 'message': 'Failed to add ingredient'}), 500
+    
+    except ValueError as e:
+        current_app.logger.error(f"Add personal ingredient ValueError: {e}")
+        return jsonify({'success': False, 'message': f'Invalid nutrition values. Please enter valid numbers. Error: {str(e)}'}), 400
+    except Exception as e:
+        current_app.logger.error(f"Add personal ingredient error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Failed to add ingredient: {str(e)}'}), 500
+
+@api_bp.route('/personal-ingredients/<int:ingredient_id>', methods=['PUT'])
+@login_required
+def update_personal_ingredient(ingredient_id):
+    """Update an existing personal ingredient."""
+    try:
+        # Verify ingredient belongs to user
+        db_client = get_db_client()
+        ingredient = db_client.fetch_one(
+            "SELECT * FROM user_personal_ingredients WHERE id = %s AND user_id = %s",
+            (ingredient_id, current_user.id)
+        )
+        
+        if not ingredient:
+            return jsonify({'success': False, 'message': 'Ingredient not found'}), 404
+        
+        data = request.get_json()
+        
+        # Prepare update data
+        update_data = {}
+        if 'name' in data:
+            update_data['name'] = data.get('name').strip()
+        if 'brand' in data:
+            update_data['brand'] = data.get('brand', '').strip() or None
+        if 'description' in data:
+            update_data['description'] = data.get('description', '').strip() or None
+        if 'category' in data:
+            update_data['category'] = data.get('category', '').strip() or None
+        if 'calories_per_100g' in data:
+            update_data['calories_per_100g'] = float(data.get('calories_per_100g', 0)) if data.get('calories_per_100g') else None
+        if 'protein_per_100g' in data:
+            update_data['protein_per_100g'] = float(data.get('protein_per_100g', 0)) if data.get('protein_per_100g') else None
+        if 'carbs_per_100g' in data:
+            update_data['carbs_per_100g'] = float(data.get('carbs_per_100g', 0)) if data.get('carbs_per_100g') else None
+        if 'fat_per_100g' in data:
+            update_data['fat_per_100g'] = float(data.get('fat_per_100g', 0)) if data.get('fat_per_100g') else None
+        if 'is_public' in data:
+            is_public = data.get('is_public', False)
+            if isinstance(is_public, str):
+                is_public = is_public.lower() in ('true', '1', 'yes', 'on')
+            update_data['is_public'] = bool(is_public)
+        
+        if not update_data:
+            return jsonify({'success': False, 'message': 'No data to update'}), 400
+        
+        # Update the ingredient
+        success = db_client.update_record('user_personal_ingredients', update_data, {'id': ingredient_id})
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Ingredient updated successfully'
+            })
+        else:
+            return jsonify({'success': False, 'message': 'Failed to update ingredient'}), 500
+    
+    except ValueError as e:
+        return jsonify({'success': False, 'message': 'Invalid nutrition values. Please enter valid numbers.'}), 400
+    except Exception as e:
+        current_app.logger.error(f"Update personal ingredient error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to update ingredient'}), 500
+
+@api_bp.route('/personal-ingredients/<int:ingredient_id>', methods=['DELETE'])
+@login_required
+def delete_personal_ingredient(ingredient_id):
+    """Delete a personal ingredient."""
+    try:
+        db_client = get_db_client()
+        
+        # Verify ingredient belongs to user
+        ingredient = db_client.fetch_one(
+            "SELECT id FROM user_personal_ingredients WHERE id = %s AND user_id = %s",
+            (ingredient_id, current_user.id)
+        )
+        
+        if not ingredient:
+            return jsonify({'success': False, 'message': 'Ingredient not found'}), 404
+        
+        # Delete the ingredient
+        success = db_client.delete_record('user_personal_ingredients', {'id': ingredient_id})
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Ingredient deleted successfully'
+            })
+        else:
+            return jsonify({'success': False, 'message': 'Failed to delete ingredient'}), 500
+    
+    except Exception as e:
+        current_app.logger.error(f"Delete personal ingredient error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to delete ingredient'}), 500
+
+@api_bp.route('/personal-ingredients/<int:ingredient_id>', methods=['GET'])
+@login_required
+def get_personal_ingredient(ingredient_id):
+    """Get a specific personal ingredient."""
+    try:
+        db_client = get_db_client()
+        ingredient = db_client.fetch_one(
+            "SELECT * FROM user_personal_ingredients WHERE id = %s AND user_id = %s",
+            (ingredient_id, current_user.id)
+        )
+        
+        if not ingredient:
+            return jsonify({'success': False, 'message': 'Ingredient not found'}), 404
+        
+        return jsonify({
+            'success': True,
+            'ingredient': {
+                'id': ingredient['id'],
+                'name': ingredient['name'],
+                'brand': ingredient.get('brand'),
+                'description': ingredient.get('description'),
+                'category': ingredient.get('category'),
+                'calories_per_100g': float(ingredient.get('calories_per_100g') or 0),
+                'protein_per_100g': float(ingredient.get('protein_per_100g') or 0),
+                'carbs_per_100g': float(ingredient.get('carbs_per_100g') or 0),
+                'fat_per_100g': float(ingredient.get('fat_per_100g') or 0),
+                'is_public': bool(ingredient.get('is_public', False))
+            }
+        })
+    
+    except Exception as e:
+        current_app.logger.error(f"Get personal ingredient error: {e}")
+        return jsonify({'success': False, 'message': 'Failed to get ingredient'}), 500
 
 def fetch_product_from_external_api(barcode):
     """

@@ -17,7 +17,14 @@
             <div class="col-md-6 col-lg-4 mb-4">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h5 class="card-title">{{ ingredient.name }}</h5>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h5 class="card-title">{{ ingredient.name }}</h5>
+                            {% if ingredient.is_public %}
+                            <span class="badge bg-success" title="This ingredient is publicly accessible">
+                                <i class="fas fa-globe me-1"></i>Public
+                            </span>
+                            {% endif %}
+                        </div>
                         {% if ingredient.brand %}
                         <h6 class="card-subtitle mb-2 text-muted">{{ ingredient.brand }}</h6>
                         {% endif %}
@@ -78,7 +85,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="ingredientName" class="form-label">Ingredient Name</label>
+                                <label for="ingredientName" class="form-label">Ingredient Name *</label>
                                 <input type="text" class="form-control" id="ingredientName" name="name" required>
                             </div>
                             <div class="mb-3">
@@ -102,31 +109,119 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="ingredientCalories" class="form-label">Calories per 100g</label>
-                                <input type="number" class="form-control" id="ingredientCalories" name="calories_per_100g" step="0.01" min="0">
+                                <input type="number" class="form-control" id="ingredientCalories" name="calories_per_100g" step="0.01" min="0" placeholder="e.g., 250">
                             </div>
                             <div class="mb-3">
                                 <label for="ingredientProtein" class="form-label">Protein per 100g (g)</label>
-                                <input type="number" class="form-control" id="ingredientProtein" name="protein_per_100g" step="0.01" min="0">
+                                <input type="number" class="form-control" id="ingredientProtein" name="protein_per_100g" step="0.01" min="0" placeholder="e.g., 20.5">
                             </div>
                             <div class="mb-3">
                                 <label for="ingredientCarbs" class="form-label">Carbs per 100g (g)</label>
-                                <input type="number" class="form-control" id="ingredientCarbs" name="carbs_per_100g" step="0.01" min="0">
+                                <input type="number" class="form-control" id="ingredientCarbs" name="carbs_per_100g" step="0.01" min="0" placeholder="e.g., 30.0">
                             </div>
                             <div class="mb-3">
                                 <label for="ingredientFat" class="form-label">Fat per 100g (g)</label>
-                                <input type="number" class="form-control" id="ingredientFat" name="fat_per_100g" step="0.01" min="0">
+                                <input type="number" class="form-control" id="ingredientFat" name="fat_per_100g" step="0.01" min="0" placeholder="e.g., 10.0">
                             </div>
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="ingredientDescription" class="form-label">Description (Optional)</label>
-                        <textarea class="form-control" id="ingredientDescription" name="description" rows="3"></textarea>
+                        <textarea class="form-control" id="ingredientDescription" name="description" rows="3" placeholder="Additional notes about this ingredient..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="ingredientPublic" name="is_public" value="true">
+                            <label class="form-check-label" for="ingredientPublic">
+                                <i class="fas fa-globe me-1"></i>Make this ingredient publicly accessible
+                                <small class="text-muted d-block">Other users will be able to use this ingredient in their nutrition calculator</small>
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-1"></i>Save Ingredient
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Ingredient Modal -->
+<div class="modal fade" id="editIngredientModal" tabindex="-1" aria-labelledby="editIngredientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editIngredientModalLabel">Edit Personal Ingredient</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editIngredientForm">
+                <input type="hidden" id="editIngredientId" name="id">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editIngredientName" class="form-label">Ingredient Name *</label>
+                                <input type="text" class="form-control" id="editIngredientName" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editIngredientBrand" class="form-label">Brand (Optional)</label>
+                                <input type="text" class="form-control" id="editIngredientBrand" name="brand">
+                            </div>
+                            <div class="mb-3">
+                                <label for="editIngredientCategory" class="form-label">Category</label>
+                                <select class="form-select" id="editIngredientCategory" name="category">
+                                    <option value="">Select Category</option>
+                                    <option value="Fruits">Fruits</option>
+                                    <option value="Vegetables">Vegetables</option>
+                                    <option value="Grains">Grains</option>
+                                    <option value="Proteins">Proteins</option>
+                                    <option value="Dairy">Dairy</option>
+                                    <option value="Snacks">Snacks</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editIngredientCalories" class="form-label">Calories per 100g</label>
+                                <input type="number" class="form-control" id="editIngredientCalories" name="calories_per_100g" step="0.01" min="0">
+                            </div>
+                            <div class="mb-3">
+                                <label for="editIngredientProtein" class="form-label">Protein per 100g (g)</label>
+                                <input type="number" class="form-control" id="editIngredientProtein" name="protein_per_100g" step="0.01" min="0">
+                            </div>
+                            <div class="mb-3">
+                                <label for="editIngredientCarbs" class="form-label">Carbs per 100g (g)</label>
+                                <input type="number" class="form-control" id="editIngredientCarbs" name="carbs_per_100g" step="0.01" min="0">
+                            </div>
+                            <div class="mb-3">
+                                <label for="editIngredientFat" class="form-label">Fat per 100g (g)</label>
+                                <input type="number" class="form-control" id="editIngredientFat" name="fat_per_100g" step="0.01" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editIngredientDescription" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="editIngredientDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editIngredientPublic" name="is_public" value="true">
+                            <label class="form-check-label" for="editIngredientPublic">
+                                <i class="fas fa-globe me-1"></i>Make this ingredient publicly accessible
+                                <small class="text-muted d-block">Other users will be able to use this ingredient in their nutrition calculator</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Update Ingredient
                     </button>
                 </div>
             </form>
@@ -141,25 +236,81 @@ document.getElementById('addIngredientForm').addEventListener('submit', function
     const formData = new FormData(this);
     const data = Object.fromEntries(formData);
     
+    // Convert empty strings to null for optional fields
+    if (!data.brand) data.brand = null;
+    if (!data.description) data.description = null;
+    if (!data.category) data.category = null;
+    if (!data.calories_per_100g) data.calories_per_100g = null;
+    if (!data.protein_per_100g) data.protein_per_100g = null;
+    if (!data.carbs_per_100g) data.carbs_per_100g = null;
+    if (!data.fat_per_100g) data.fat_per_100g = null;
+    
     fetch('/api/personal-ingredients', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
         },
         body: JSON.stringify(data)
     })
     .then(response => response.json())
     .then(result => {
         if (result.success) {
+            // Close modal and reload
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addIngredientModal'));
+            modal.hide();
             location.reload();
         } else {
-            alert('Error adding ingredient: ' + result.message);
+            alert('Error adding ingredient: ' + (result.message || 'Unknown error'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
         alert('Error adding ingredient');
+    });
+});
+
+document.getElementById('editIngredientForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const ingredientId = document.getElementById('editIngredientId').value;
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    // Remove id from data (it's in the URL)
+    delete data.id;
+    
+    // Convert empty strings to null for optional fields
+    if (!data.brand) data.brand = null;
+    if (!data.description) data.description = null;
+    if (!data.category) data.category = null;
+    if (!data.calories_per_100g) data.calories_per_100g = null;
+    if (!data.protein_per_100g) data.protein_per_100g = null;
+    if (!data.carbs_per_100g) data.carbs_per_100g = null;
+    if (!data.fat_per_100g) data.fat_per_100g = null;
+    
+    fetch(`/api/personal-ingredients/${ingredientId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            // Close modal and reload
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editIngredientModal'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert('Error updating ingredient: ' + (result.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating ingredient');
     });
 });
 
@@ -183,8 +334,36 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function editIngredient(ingredientId) {
-    // TODO: Implement edit functionality
-    alert('Edit functionality coming soon!');
+    // Fetch ingredient data
+    fetch(`/api/personal-ingredients/${ingredientId}`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.success && result.ingredient) {
+                const ing = result.ingredient;
+                
+                // Populate edit modal
+                document.getElementById('editIngredientId').value = ing.id;
+                document.getElementById('editIngredientName').value = ing.name || '';
+                document.getElementById('editIngredientBrand').value = ing.brand || '';
+                document.getElementById('editIngredientCategory').value = ing.category || '';
+                document.getElementById('editIngredientDescription').value = ing.description || '';
+                document.getElementById('editIngredientCalories').value = ing.calories_per_100g || '';
+                document.getElementById('editIngredientProtein').value = ing.protein_per_100g || '';
+                document.getElementById('editIngredientCarbs').value = ing.carbs_per_100g || '';
+                document.getElementById('editIngredientFat').value = ing.fat_per_100g || '';
+                document.getElementById('editIngredientPublic').checked = ing.is_public || false;
+                
+                // Show edit modal
+                const editModal = new bootstrap.Modal(document.getElementById('editIngredientModal'));
+                editModal.show();
+            } else {
+                alert('Error loading ingredient: ' + (result.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading ingredient');
+        });
 }
 
 function deleteIngredient(ingredientId) {
@@ -192,7 +371,7 @@ function deleteIngredient(ingredientId) {
         fetch(`/api/personal-ingredients/${ingredientId}`, {
             method: 'DELETE',
             headers: {
-                'X-CSRFToken': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+                'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
             }
         })
         .then(response => response.json())
@@ -200,7 +379,7 @@ function deleteIngredient(ingredientId) {
             if (result.success) {
                 location.reload();
             } else {
-                alert('Error deleting ingredient: ' + result.message);
+                alert('Error deleting ingredient: ' + (result.message || 'Unknown error'));
             }
         })
         .catch(error => {
