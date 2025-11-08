@@ -181,6 +181,15 @@ def add_recipe():
         dietary_tags = request.form.getlist('dietary_tags')
         dietary_tags_json = dietary_tags if dietary_tags else None
         
+        # Get nutrition data (optional)
+        calories_per_serving = request.form.get('calories_per_serving', '').strip()
+        protein_g = request.form.get('protein_g', '').strip()
+        carbohydrates_g = request.form.get('carbohydrates_g', '').strip()
+        fat_total_g = request.form.get('fat_total_g', '').strip()
+        fiber_g = request.form.get('fiber_g', '').strip()
+        sugars_g = request.form.get('sugars_g', '').strip()
+        sodium_mg = request.form.get('sodium_mg', '').strip()
+        
         # Calculate total time if both prep and cook times are provided
         total_time = None
         if prep_time and cook_time:
@@ -216,6 +225,32 @@ def add_recipe():
             )
             
             if recipe and recipe.id:
+                # Create nutrition data if provided
+                if calories_per_serving or protein_g or carbohydrates_g or fat_total_g or fiber_g or sugars_g or sodium_mg:
+                    from db_client import get_db_client
+                    db_client = get_db_client()
+                    
+                    nutrition_data = {
+                        'recipe_id': recipe.id,
+                        'is_calculated': False
+                    }
+                    if calories_per_serving:
+                        nutrition_data['calories_per_serving'] = float(calories_per_serving)
+                    if protein_g:
+                        nutrition_data['protein_g'] = float(protein_g)
+                    if carbohydrates_g:
+                        nutrition_data['carbohydrates_g'] = float(carbohydrates_g)
+                    if fat_total_g:
+                        nutrition_data['fat_total_g'] = float(fat_total_g)
+                    if fiber_g:
+                        nutrition_data['fiber_g'] = float(fiber_g)
+                    if sugars_g:
+                        nutrition_data['sugars_g'] = float(sugars_g)
+                    if sodium_mg:
+                        nutrition_data['sodium_mg'] = float(sodium_mg)
+                    
+                    db_client.insert_record('recipe_nutrition', nutrition_data)
+                
                 flash('Recipe created successfully!', 'success')
                 return redirect(url_for('main.view_recipe', recipe_id=recipe.id))
             else:
@@ -252,6 +287,15 @@ def edit_recipe(recipe_id):
         cook_time = request.form.get('cook_time', '')
         servings = request.form.get('servings', '')
         
+        # Get nutrition data (optional)
+        calories_per_serving = request.form.get('calories_per_serving', '').strip()
+        protein_g = request.form.get('protein_g', '').strip()
+        carbohydrates_g = request.form.get('carbohydrates_g', '').strip()
+        fat_total_g = request.form.get('fat_total_g', '').strip()
+        fiber_g = request.form.get('fiber_g', '').strip()
+        sugars_g = request.form.get('sugars_g', '').strip()
+        sodium_mg = request.form.get('sodium_mg', '').strip()
+        
         # Validate required fields
         if not name or not ingredients or not instructions:
             flash('Name, ingredients, and instructions are required.', 'error')
@@ -269,14 +313,57 @@ def edit_recipe(recipe_id):
             }
             
             success = Recipe.update(recipe_id, update_data)
+            
+            # Update or create nutrition data if provided
             if success:
+                from db_client import get_db_client
+                db_client = get_db_client()
+                
+                # Check if nutrition data exists
+                existing_nutrition = db_client.fetch_one(
+                    "SELECT id FROM recipe_nutrition WHERE recipe_id = %s",
+                    (recipe_id,)
+                )
+                
+                # Prepare nutrition data
+                nutrition_data = {}
+                if calories_per_serving:
+                    nutrition_data['calories_per_serving'] = float(calories_per_serving)
+                if protein_g:
+                    nutrition_data['protein_g'] = float(protein_g)
+                if carbohydrates_g:
+                    nutrition_data['carbohydrates_g'] = float(carbohydrates_g)
+                if fat_total_g:
+                    nutrition_data['fat_total_g'] = float(fat_total_g)
+                if fiber_g:
+                    nutrition_data['fiber_g'] = float(fiber_g)
+                if sugars_g:
+                    nutrition_data['sugars_g'] = float(sugars_g)
+                if sodium_mg:
+                    nutrition_data['sodium_mg'] = float(sodium_mg)
+                
+                # Update or insert nutrition data
+                if nutrition_data:
+                    if existing_nutrition:
+                        # Update existing nutrition
+                        db_client.update_record('recipe_nutrition', nutrition_data, {'recipe_id': recipe_id})
+                    else:
+                        # Create new nutrition record
+                        nutrition_data['recipe_id'] = recipe_id
+                        nutrition_data['is_calculated'] = False
+                        db_client.insert_record('recipe_nutrition', nutrition_data)
+                elif existing_nutrition:
+                    # If no nutrition data provided but exists, we could delete it
+                    # For now, we'll leave it as is
+                    pass
+                
                 flash('Recipe updated successfully!', 'success')
                 return redirect(url_for('main.view_recipe', recipe_id=recipe_id))
             else:
                 flash('Failed to update recipe. Please try again.', 'error')
         
         except ValueError as e:
-            flash('Please enter valid numbers for prep time, cook time, and servings.', 'error')
+            flash('Please enter valid numbers for prep time, cook time, servings, and nutrition values.', 'error')
         except Exception as e:
             flash('An error occurred while updating the recipe.', 'error')
             print(f"Error updating recipe: {e}")
@@ -329,29 +416,50 @@ def my_ingredients():
 
 @main_bp.route('/search')
 def search():
-    """Global search functionality."""
+    """Global search functionality with tag-based searching."""
     query = request.args.get('q', '').strip()
     search_type = request.args.get('type', 'all')  # all, recipes, products
+    include_all = request.args.get('include_all', 'false').lower() == 'true'  # Debug option
     
     results = {
         'recipes': [],
         'products': [],
-        'query': query
+        'query': query,
+        'search_type': search_type,
+        'total_results': 0
     }
     
     try:
         if query and len(query) >= 2:
             if search_type in ['all', 'recipes']:
-                # Search recipes using our raw SQL method
-                recipe_results = Recipe.search(query, filters={'is_public': True, 'is_approved': True})
-                results['recipes'] = recipe_results[:20]  # Limit to 20
+                # Build filters - if include_all is True, don't filter by public/approved
+                filters = None
+                if not include_all:
+                    # Try with filters first
+                    filters = {'is_public': True, 'is_approved': True}
+                
+                # Search recipes using enhanced search method (includes tags, ingredients, etc.)
+                recipe_results = Recipe.search(query, filters=filters, limit=50)
+                results['recipes'] = recipe_results
+                
+                # If no results with filters, try without filters (for debugging)
+                if not recipe_results and not include_all:
+                    print(f"No results with filters, trying without filters...")
+                    recipe_results_no_filter = Recipe.search(query, filters=None, limit=50)
+                    if recipe_results_no_filter:
+                        print(f"Found {len(recipe_results_no_filter)} recipes without filters")
+                        results['recipes'] = recipe_results_no_filter
             
             if search_type in ['all', 'products']:
                 # Search products using our raw SQL method
                 product_results = Product.search(query)
                 results['products'] = product_results[:20]  # Limit to 20
+            
+            results['total_results'] = len(results['recipes']) + len(results['products'])
     except Exception as e:
         print(f"Search error: {e}")
+        import traceback
+        traceback.print_exc()
         # Return empty results on error
     
     return render_template('search_results.html', **results)

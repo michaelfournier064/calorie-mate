@@ -651,28 +651,41 @@ class Recipe:
     
     @staticmethod
     def search(query: str, filters: Dict[str, Any] = None, limit: int = 20) -> List['Recipe']:
-        """Search recipes by name or description."""
+        """Search recipes by name, description, ingredients, category, cuisine_type, or dietary tags."""
         db_client = get_db_client()
         
-        search_query = """
-        SELECT * FROM recipes 
-        WHERE (name LIKE %s OR description LIKE %s)
-        """
         search_term = f"%{query}%"
-        params = [search_term, search_term]
+        
+        # Build comprehensive search query across multiple fields
+        # For JSON tags, we search for exact matches and also convert JSON to text for partial matching
+        search_query = """
+        SELECT DISTINCT r.* FROM recipes r
+        WHERE (
+            r.name LIKE %s 
+            OR r.description LIKE %s 
+            OR r.ingredients LIKE %s
+            OR r.category LIKE %s
+            OR r.cuisine_type LIKE %s
+            OR (r.dietary_tags IS NOT NULL AND (
+                JSON_SEARCH(r.dietary_tags, 'one', %s) IS NOT NULL
+                OR CAST(r.dietary_tags AS CHAR) LIKE %s
+            ))
+        )
+        """
+        # Search for exact tag match and also search in JSON text representation
+        params = [search_term, search_term, search_term, search_term, search_term, query, search_term]
         
         if filters:
             where_clause, where_params = db_client.build_where_clause(filters)
             search_query += " AND " + where_clause[7:]  # Remove " WHERE "
             params.extend(where_params)
         
-        search_query += " ORDER BY is_featured DESC, created_at DESC LIMIT %s"
+        search_query += " ORDER BY r.is_featured DESC, r.created_at DESC LIMIT %s"
         params.append(limit)
         
         results = db_client.execute_query(search_query, tuple(params))
         return [Recipe(**row) for row in results]
     
-    @staticmethod
     @staticmethod
     def get_categories() -> List[str]:
         """Get list of distinct recipe categories."""

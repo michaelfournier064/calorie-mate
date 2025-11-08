@@ -263,6 +263,10 @@ class DatabaseClient:
                 placeholders = ', '.join(['%s'] * len(value))
                 where_parts.append(f"{key} IN ({placeholders})")
                 params.extend(value)
+            elif isinstance(value, bool):
+                # Convert Python boolean to MySQL TINYINT (1 for True, 0 for False)
+                where_parts.append(f"{key} = %s")
+                params.append(1 if value else 0)
             else:
                 where_parts.append(f"{key} = %s")
                 params.append(value)

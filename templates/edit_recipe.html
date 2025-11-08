@@ -29,8 +29,60 @@
                         <div class="form-text">Write clear, step-by-step instructions</div>
                     </div>
 
+                    <!-- Nutrition Information (Optional) -->
+                    {% set nutrition = recipe.get_nutrition() %}
+                    <div class="card bg-light mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Nutrition Information (Optional)</h6>
+                            <small class="text-muted">Add nutrition data per serving for use in the nutrition calculator</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="calories_per_serving" class="form-label">Calories per Serving</label>
+                                    <input type="number" class="form-control" id="calories_per_serving" name="calories_per_serving" 
+                                           step="0.1" min="0" value="{{ nutrition.calories_per_serving if nutrition else '' }}" placeholder="e.g., 250">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="protein_g" class="form-label">Protein (g)</label>
+                                    <input type="number" class="form-control" id="protein_g" name="protein_g" 
+                                           step="0.1" min="0" value="{{ nutrition.protein_g if nutrition else '' }}" placeholder="e.g., 15.5">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="carbohydrates_g" class="form-label">Carbohydrates (g)</label>
+                                    <input type="number" class="form-control" id="carbohydrates_g" name="carbohydrates_g" 
+                                           step="0.1" min="0" value="{{ nutrition.carbohydrates_g if nutrition else '' }}" placeholder="e.g., 30.0">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="fat_total_g" class="form-label">Total Fat (g)</label>
+                                    <input type="number" class="form-control" id="fat_total_g" name="fat_total_g" 
+                                           step="0.1" min="0" value="{{ nutrition.fat_total_g if nutrition else '' }}" placeholder="e.g., 8.5">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="fiber_g" class="form-label">Fiber (g)</label>
+                                    <input type="number" class="form-control" id="fiber_g" name="fiber_g" 
+                                           step="0.1" min="0" value="{{ nutrition.fiber_g if nutrition else '' }}" placeholder="e.g., 5.0">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="sugars_g" class="form-label">Sugars (g)</label>
+                                    <input type="number" class="form-control" id="sugars_g" name="sugars_g" 
+                                           step="0.1" min="0" value="{{ nutrition.sugars_g if nutrition else '' }}" placeholder="e.g., 10.0">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="sodium_mg" class="form-label">Sodium (mg)</label>
+                                    <input type="number" class="form-control" id="sodium_mg" name="sodium_mg" 
+                                           step="0.1" min="0" value="{{ nutrition.sodium_mg if nutrition else '' }}" placeholder="e.g., 450">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{{ url_for('view_recipe', id=recipe.id) }}" class="btn btn-secondary me-md-2">
+                        <a href="{{ url_for('main.view_recipe', recipe_id=recipe.id) }}" class="btn btn-secondary me-md-2">
                             <i class="fas fa-times me-1"></i>Cancel
                         </a>
                         <button type="submit" class="btn btn-recipe">

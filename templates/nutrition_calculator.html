@@ -2,14 +2,11 @@
 
 {% block title %}Nutrition Calculator - CalorieMate{% endblock %}
 
-{% block extra_css %}
+{% block content %}
 <style>
 .progress-bar-slim { height: 8px; }
 .progress-bar-thin { height: 6px; }
 </style>
-{% endblock %}
-
-{% block content %}
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-lg-10">
@@ -31,17 +28,69 @@
                             <h5 class="mb-0">Add Items to Calculate</h5>
                         </div>
                         <div class="card-body">
-                            <!-- Product Search -->
-                            <div class="mb-4">
-                                <label for="product-search" class="form-label">Search Products</label>
-                                <div class="input-group">
-                                    <input type="text" id="product-search" class="form-control" 
-                                           placeholder="Search by name or barcode...">
-                                    <button type="button" id="search-btn" class="btn btn-outline-primary" title="Search products">
-                                        <i class="fas fa-search"></i>
+                            <!-- Search Type Tabs -->
+                            <ul class="nav nav-tabs mb-3" id="searchTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-pane" type="button" role="tab">
+                                        <i class="fas fa-shopping-bag me-1"></i>Products
                                     </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="recipes-tab" data-bs-toggle="tab" data-bs-target="#recipes-pane" type="button" role="tab">
+                                        <i class="fas fa-book me-1"></i>Recipes
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="ingredients-tab" data-bs-toggle="tab" data-bs-target="#ingredients-pane" type="button" role="tab">
+                                        <i class="fas fa-list me-1"></i>My Ingredients
+                                    </button>
+                                </li>
+                            </ul>
+                            
+                            <!-- Tab Content -->
+                            <div class="tab-content" id="searchTabContent">
+                                <!-- Products Tab -->
+                                <div class="tab-pane fade show active" id="products-pane" role="tabpanel">
+                                    <div class="mb-4">
+                                        <label for="product-search" class="form-label">Search Products</label>
+                                        <div class="input-group">
+                                            <input type="text" id="product-search" class="form-control" 
+                                                   placeholder="Search by name or barcode...">
+                                            <button type="button" id="search-btn" class="btn btn-outline-primary" title="Search products">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                        <div id="search-results" class="mt-2"></div>
+                                    </div>
                                 </div>
-                                <div id="search-results" class="mt-2"></div>
+                                
+                                <!-- Recipes Tab -->
+                                <div class="tab-pane fade" id="recipes-pane" role="tabpanel">
+                                    <div class="mb-4">
+                                        <label for="recipe-search" class="form-label">Search Recipes</label>
+                                        <div class="input-group">
+                                            <input type="text" id="recipe-search" class="form-control" 
+                                                   placeholder="Search recipes by name, ingredient, or tag...">
+                                            <button type="button" id="search-recipe-btn" class="btn btn-outline-primary" title="Search recipes">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                        <div id="recipe-search-results" class="mt-2"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Personal Ingredients Tab -->
+                                <div class="tab-pane fade" id="ingredients-pane" role="tabpanel">
+                                    <div class="mb-4">
+                                        <label class="form-label">Your Personal Ingredients</label>
+                                        <button type="button" id="load-ingredients-btn" class="btn btn-outline-primary btn-sm mb-2">
+                                            <i class="fas fa-sync me-1"></i>Load Ingredients
+                                        </button>
+                                        <div id="ingredients-results" class="mt-2">
+                                            <p class="text-muted text-center">Click "Load Ingredients" to view your personal ingredients.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Quick Add Common Items -->
@@ -232,7 +281,7 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block scripts %}
 <script>
 let mealItems = [];
 let itemCounter = 0;
@@ -257,6 +306,22 @@ $('#product-search').keypress(function(e) {
     if (e.which === 13) {
         searchProducts();
     }
+});
+
+// Recipe search functionality
+$('#search-recipe-btn').click(function() {
+    searchRecipes();
+});
+
+$('#recipe-search').keypress(function(e) {
+    if (e.which === 13) {
+        searchRecipes();
+    }
+});
+
+// Load personal ingredients
+$('#load-ingredients-btn').click(function() {
+    loadPersonalIngredients();
 });
 
 function searchProducts() {
@@ -309,6 +374,110 @@ function displaySearchResults(products) {
     $('#search-results').html(html);
 }
 
+function searchRecipes() {
+    const query = $('#recipe-search').val().trim();
+    if (!query) return;
+    
+    showLoading($('#search-recipe-btn'));
+    
+    $.ajax({
+        url: `/api/recipe/search?q=${encodeURIComponent(query)}`,
+        method: 'GET',
+        success: function(response) {
+            displayRecipeResults(response.recipes || []);
+        },
+        error: function() {
+            $('#recipe-search-results').html('<div class="alert alert-warning">No recipes found or search error.</div>');
+        },
+        complete: function() {
+            hideLoading($('#search-recipe-btn'), '<i class="fas fa-search"></i>');
+        }
+    });
+}
+
+function displayRecipeResults(recipes) {
+    if (recipes.length === 0) {
+        $('#recipe-search-results').html('<div class="alert alert-info">No recipes found. Try a different search term.</div>');
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    recipes.forEach(recipe => {
+        html += `
+            <div class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">${recipe.name}</h6>
+                        <p class="mb-1 text-muted">${recipe.description || 'No description'}</p>
+                        <small>
+                            Calories: ${recipe.calories || 'N/A'} per serving | 
+                            Servings: ${recipe.servings || 1} | 
+                            ${recipe.category ? 'Category: ' + recipe.category : ''}
+                        </small>
+                        ${recipe.protein > 0 || recipe.carbs > 0 || recipe.fat > 0 ? 
+                            `<br><small class="text-muted">P: ${recipe.protein}g | C: ${recipe.carbs}g | F: ${recipe.fat}g</small>` : ''}
+                    </div>
+                    <button class="btn btn-sm btn-success" onclick="addRecipeToMeal(${recipe.id}, '${recipe.name.replace(/'/g, "\\'")}', ${recipe.calories || 0}, ${recipe.protein || 0}, ${recipe.carbs || 0}, ${recipe.fat || 0}, ${recipe.servings || 1})">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    $('#recipe-search-results').html(html);
+}
+
+function loadPersonalIngredients() {
+    showLoading($('#load-ingredients-btn'));
+    
+    $.ajax({
+        url: '/api/ingredients/personal',
+        method: 'GET',
+        success: function(response) {
+            displayIngredientResults(response.ingredients || []);
+        },
+        error: function() {
+            $('#ingredients-results').html('<div class="alert alert-warning">Failed to load ingredients. Please try again.</div>');
+        },
+        complete: function() {
+            hideLoading($('#load-ingredients-btn'), '<i class="fas fa-sync me-1"></i>Load Ingredients');
+        }
+    });
+}
+
+function displayIngredientResults(ingredients) {
+    if (ingredients.length === 0) {
+        $('#ingredients-results').html('<div class="alert alert-info">You don\'t have any personal ingredients yet. Add them from the "My Ingredients" page.</div>');
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    ingredients.forEach(ing => {
+        html += `
+            <div class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">${ing.name}</h6>
+                        ${ing.brand ? `<p class="mb-1 text-muted">${ing.brand}</p>` : ''}
+                        <small>
+                            Calories: ${ing.calories || 0} per 100g | 
+                            P: ${ing.protein || 0}g | C: ${ing.carbs || 0}g | F: ${ing.fat || 0}g
+                        </small>
+                    </div>
+                    <button class="btn btn-sm btn-success" onclick="addIngredientToMeal(${ing.id}, '${ing.name.replace(/'/g, "\\'")}', ${ing.calories || 0}, ${ing.protein || 0}, ${ing.carbs || 0}, ${ing.fat || 0})">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    $('#ingredients-results').html(html);
+}
+
 // Manual entry form
 $('#manual-entry-form').submit(function(e) {
     e.preventDefault();
@@ -339,6 +508,33 @@ function addProductToMeal(productId, name, calories, protein, carbs, fat, defaul
         // Calculate nutrition for the specified amount
         const ratio = parsedAmount / defaultServing;
         addMealItem(name, parsedAmount, calories * ratio, protein * ratio, carbs * ratio, fat * ratio);
+    }
+}
+
+function addRecipeToMeal(recipeId, name, caloriesPerServing, protein, carbs, fat, servings) {
+    const numServings = prompt(`Enter number of servings (default: 1):`, '1') || '1';
+    const parsedServings = parseFloat(numServings);
+    
+    if (parsedServings > 0) {
+        // Calculate total nutrition for the specified number of servings
+        const totalCalories = caloriesPerServing * parsedServings;
+        const totalProtein = protein * parsedServings;
+        const totalCarbs = carbs * parsedServings;
+        const totalFat = fat * parsedServings;
+        
+        addMealItem(`${name} (${parsedServings} serving${parsedServings > 1 ? 's' : ''})`, 
+                    parsedServings, totalCalories, totalProtein, totalCarbs, totalFat);
+    }
+}
+
+function addIngredientToMeal(ingredientId, name, caloriesPer100g, protein, carbs, fat) {
+    const amount = prompt(`Enter amount in grams (nutrition is per 100g):`, '100') || '100';
+    const parsedAmount = parseFloat(amount);
+    
+    if (parsedAmount > 0) {
+        // Calculate nutrition for the specified amount (nutrition is stored per 100g)
+        const ratio = parsedAmount / 100;
+        addMealItem(name, parsedAmount, caloriesPer100g * ratio, protein * ratio, carbs * ratio, fat * ratio);
     }
 }
 

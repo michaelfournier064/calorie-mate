@@ -513,6 +513,120 @@ def search_nutrition():
         current_app.logger.error(f"Nutrition search error: {e}")
         return jsonify({'error': 'Nutrition search failed'}), 500
 
+@api_bp.route('/recipe/<int:recipe_id>/nutrition')
+@login_required
+def get_recipe_nutrition(recipe_id):
+    """Get nutrition data for a specific recipe."""
+    try:
+        recipe = Recipe.get(recipe_id)
+        if not recipe:
+            return jsonify({'error': 'Recipe not found'}), 404
+        
+        # Check if recipe is accessible
+        if not recipe.is_public or not recipe.is_approved:
+            if recipe.created_by_user_id != current_user.id and not current_user.is_moderator():
+                return jsonify({'error': 'Recipe not accessible'}), 403
+        
+        # Get nutrition data
+        nutrition = recipe.get_nutrition()
+        
+        if nutrition:
+            # Calculate per serving
+            servings = recipe.servings or 1
+            per_serving = {
+                'calories': round((nutrition.get('calories_per_serving') or 0), 1),
+                'protein': round((nutrition.get('protein_g') or 0), 1),
+                'carbs': round((nutrition.get('carbohydrates_g') or 0), 1),
+                'fat': round((nutrition.get('fat_total_g') or 0), 1)
+            }
+        else:
+            # No nutrition data available
+            per_serving = {
+                'calories': 0,
+                'protein': 0,
+                'carbs': 0,
+                'fat': 0
+            }
+        
+        return jsonify({
+            'recipe': {
+                'id': recipe.id,
+                'name': recipe.name,
+                'servings': servings,
+                'description': recipe.description
+            },
+            'nutrition': per_serving
+        })
+    
+    except Exception as e:
+        current_app.logger.error(f"Get recipe nutrition error: {e}")
+        return jsonify({'error': 'Failed to get recipe nutrition'}), 500
+
+@api_bp.route('/recipe/search')
+@login_required
+def search_recipes_api():
+    """Search recipes for nutrition calculator."""
+    try:
+        query = request.args.get('q', '').strip()
+        
+        if not query:
+            return jsonify({'recipes': []})
+        
+        # Search recipes
+        recipes = Recipe.search(query, filters={'is_public': True, 'is_approved': True}, limit=20)
+        
+        recipe_list = []
+        for recipe in recipes:
+            nutrition = recipe.get_nutrition()
+            recipe_list.append({
+                'id': recipe.id,
+                'name': recipe.name,
+                'servings': recipe.servings or 1,
+                'description': recipe.description,
+                'category': recipe.category,
+                'calories': round((nutrition.get('calories_per_serving') or 0), 1) if nutrition else 0,
+                'protein': round((nutrition.get('protein_g') or 0), 1) if nutrition else 0,
+                'carbs': round((nutrition.get('carbohydrates_g') or 0), 1) if nutrition else 0,
+                'fat': round((nutrition.get('fat_total_g') or 0), 1) if nutrition else 0
+            })
+        
+        return jsonify({'recipes': recipe_list})
+    
+    except Exception as e:
+        current_app.logger.error(f"Recipe search error: {e}")
+        return jsonify({'error': 'Recipe search failed'}), 500
+
+@api_bp.route('/ingredients/personal')
+@login_required
+def get_personal_ingredients():
+    """Get user's personal ingredients for nutrition calculator."""
+    try:
+        db_client = get_db_client()
+        ingredients = db_client.execute_query(
+            "SELECT * FROM user_personal_ingredients WHERE user_id = %s ORDER BY name",
+            (current_user.id,)
+        )
+        
+        ingredient_list = []
+        for ing in ingredients:
+            # Calculate nutrition per 100g (already stored per 100g)
+            ingredient_list.append({
+                'id': ing['id'],
+                'name': ing['name'],
+                'brand': ing.get('brand'),
+                'category': ing.get('category'),
+                'calories': round((ing.get('calories_per_100g') or 0), 1),
+                'protein': round((ing.get('protein_per_100g') or 0), 1),
+                'carbs': round((ing.get('carbs_per_100g') or 0), 1),
+                'fat': round((ing.get('fat_per_100g') or 0), 1)
+            })
+        
+        return jsonify({'ingredients': ingredient_list})
+    
+    except Exception as e:
+        current_app.logger.error(f"Get personal ingredients error: {e}")
+        return jsonify({'error': 'Failed to get personal ingredients'}), 500
+
 def fetch_product_from_external_api(barcode):
     """
     Fetch product information from external APIs.
