@@ -92,17 +92,17 @@ class DatabaseClient:
     Provides methods for CRUD operations, transactions, and connection management.
     """
     
-    def __init__(self, database_uri: str = None):
+    def __init__(self, database_url: str = None):
         """Initialize database client with connection pool."""
         self.logger = logging.getLogger(__name__)
         
-        # Parse database URI (mysql+pymysql://user:pass@host:port/database)
-        if not database_uri:
-            database_uri = os.getenv('DATABASE_URI', 'mysql+pymysql://root:@localhost:3306/caloriemate')
+        # Parse database URL (mysql+pymysql://user:pass@host:port/database)
+        if not database_url:
+            database_url = os.getenv('DATABASE_URL', 'mysql+pymysql://root:@localhost:3306/caloriemate')
         
-        # Extract connection details from URI
-        if '://' in database_uri:
-            _, uri_parts = database_uri.split('://', 1)
+        # Extract connection details from URL
+        if '://' in database_url:
+            _, uri_parts = database_url.split('://', 1)
             if '@' in uri_parts:
                 auth_part, host_db_part = uri_parts.split('@', 1)
                 if ':' in auth_part:
@@ -392,13 +392,13 @@ class DatabaseClient:
 db_client = None
 
 
-def init_db_client(database_uri: str = None):
+def init_db_client(database_url: str = None):
     """Initialize global database client."""
     global db_client
     # Clear any existing client and its connections
     if db_client and hasattr(db_client, 'pool'):
         db_client.pool.clear_pool()
-    db_client = DatabaseClient(database_uri)
+    db_client = DatabaseClient(database_url)
     return db_client
 
 

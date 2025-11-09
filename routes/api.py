@@ -11,10 +11,6 @@ import json
 
 api_bp = Blueprint('api', __name__)
 
-# External API configurations (placeholder - replace with real API keys)
-NUTRITION_API_KEY = "your-nutrition-api-key"
-BARCODE_API_KEY = "your-barcode-api-key"
-
 @api_bp.route('/barcode/<barcode>')
 @login_required
 def lookup_barcode(barcode):

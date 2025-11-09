@@ -20,19 +20,9 @@ def create_app():
     
     # Configuration
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-change-in-production')
-    app.config['DATABASE_URI'] = os.getenv('DATABASE_URI', 'mysql+pymysql://root:@localhost:3306/caloriemate')
+    app.config['DATABASE_URL'] = os.getenv('DATABASE_URL', 'mysql+pymysql://root:@localhost:3306/caloriemate')
     app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
-    app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', 16777216))  # 16MB
-    
-    # Database configuration for raw SQL
-    app.config['DATABASE_CONFIG'] = {
-        'host': os.getenv('DB_HOST', 'localhost'),
-        'port': int(os.getenv('DB_PORT', 3306)),
-        'user': os.getenv('DB_USER', 'root'),
-        'password': os.getenv('DB_PASSWORD', ''),
-        'database': os.getenv('DB_NAME', 'caloriemate'),
-        'charset': 'utf8mb4'
-    }
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
     
     # Initialize extensions with app
     login_manager.init_app(app)
@@ -47,8 +37,8 @@ def create_app():
     # Initialize database client
     with app.app_context():
         from db_client import init_db_client
-        database_uri = app.config.get('DATABASE_URI') or os.getenv('DATABASE_URI')
-        init_db_client(database_uri)
+        database_url = app.config.get('DATABASE_URL')
+        init_db_client(database_url)
     
     # Register blueprints
     from routes.auth import auth_bp
