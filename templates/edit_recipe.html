@@ -29,6 +29,25 @@
                         <div class="form-text">Write clear, step-by-step instructions</div>
                     </div>
 
+                    <!-- Recipe Details -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="prep_time" class="form-label">Prep Time (minutes)</label>
+                            <input type="number" class="form-control" id="prep_time" name="prep_time" 
+                                   min="0" value="{{ recipe.prep_time_minutes if recipe.prep_time_minutes else '' }}" placeholder="e.g., 15">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="cook_time" class="form-label">Cook Time (minutes)</label>
+                            <input type="number" class="form-control" id="cook_time" name="cook_time" 
+                                   min="0" value="{{ recipe.cook_time_minutes if recipe.cook_time_minutes else '' }}" placeholder="e.g., 30">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="servings" class="form-label">Servings</label>
+                            <input type="number" class="form-control" id="servings" name="servings" 
+                                   min="1" value="{{ recipe.servings if recipe.servings else 1 }}" placeholder="e.g., 4">
+                        </div>
+                    </div>
+
                     <!-- Nutrition Information (Optional) -->
                     {% set nutrition = recipe.get_nutrition() %}
                     <div class="card bg-light mb-3">

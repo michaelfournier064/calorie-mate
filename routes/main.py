@@ -313,7 +313,7 @@ def edit_recipe(recipe_id):
                 'instructions': instructions,
                 'prep_time_minutes': int(prep_time) if prep_time else None,
                 'cook_time_minutes': int(cook_time) if cook_time else None,
-                'servings': int(servings) if servings else None
+                'servings': int(servings) if servings else 1
             }
             
             success = Recipe.update(recipe_id, update_data)
