@@ -1,0 +1,844 @@
+{% extends "base.html" %}
+
+{% block title %}Nutrition Calculator - CalorieMate{% endblock %}
+
+{% block content %}
+<style>
+.progress-bar-slim { height: 8px; }
+.progress-bar-thin { height: 6px; }
+</style>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Page Header -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">
+                        <i class="fas fa-calculator me-2"></i>Nutrition Calculator
+                    </h3>
+                    <p class="mb-0 opacity-75">Calculate nutrition information for custom serving sizes and meal combinations</p>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Calculator Form -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Add Items to Calculate</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Search Type Tabs -->
+                            <ul class="nav nav-tabs mb-3" id="searchTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="products-tab" data-bs-toggle="tab" data-bs-target="#products-pane" type="button" role="tab">
+                                        <i class="fas fa-shopping-bag me-1"></i>Products
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="recipes-tab" data-bs-toggle="tab" data-bs-target="#recipes-pane" type="button" role="tab">
+                                        <i class="fas fa-book me-1"></i>Recipes
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="ingredients-tab" data-bs-toggle="tab" data-bs-target="#ingredients-pane" type="button" role="tab">
+                                        <i class="fas fa-list me-1"></i>My Ingredients
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="public-ingredients-tab" data-bs-toggle="tab" data-bs-target="#public-ingredients-pane" type="button" role="tab">
+                                        <i class="fas fa-globe me-1"></i>Public Ingredients
+                                    </button>
+                                </li>
+                            </ul>
+                            
+                            <!-- Tab Content -->
+                            <div class="tab-content" id="searchTabContent">
+                                <!-- Products Tab -->
+                                <div class="tab-pane fade show active" id="products-pane" role="tabpanel">
+                                    <div class="mb-4">
+                                        <label for="product-search" class="form-label">Search Products</label>
+                                        <div class="input-group">
+                                            <input type="text" id="product-search" class="form-control" 
+                                                   placeholder="Search by name or barcode...">
+                                            <button type="button" id="search-btn" class="btn btn-outline-primary" title="Search products">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                        <div id="search-results" class="mt-2"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Recipes Tab -->
+                                <div class="tab-pane fade" id="recipes-pane" role="tabpanel">
+                                    <div class="mb-4">
+                                        <label for="recipe-search" class="form-label">Search Recipes</label>
+                                        <div class="input-group">
+                                            <input type="text" id="recipe-search" class="form-control" 
+                                                   placeholder="Search recipes by name, ingredient, or tag...">
+                                            <button type="button" id="search-recipe-btn" class="btn btn-outline-primary" title="Search recipes">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                        <div id="recipe-search-results" class="mt-2"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Personal Ingredients Tab -->
+                                <div class="tab-pane fade" id="ingredients-pane" role="tabpanel">
+                                    <div class="mb-4">
+                                        <label class="form-label">Your Personal Ingredients</label>
+                                        <button type="button" id="load-ingredients-btn" class="btn btn-outline-primary btn-sm mb-2">
+                                            <i class="fas fa-sync me-1"></i>Load My Ingredients
+                                        </button>
+                                        <div id="ingredients-results" class="mt-2">
+                                            <p class="text-muted text-center">Click "Load My Ingredients" to view your personal ingredients.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Public Ingredients Tab -->
+                                <div class="tab-pane fade" id="public-ingredients-pane" role="tabpanel">
+                                    <div class="mb-4">
+                                        <label for="public-ingredient-search" class="form-label">Search Public Ingredients</label>
+                                        <div class="input-group">
+                                            <input type="text" id="public-ingredient-search" class="form-control" 
+                                                   placeholder="Search public ingredients by name, brand, or category...">
+                                            <button type="button" id="search-public-ingredients-btn" class="btn btn-outline-primary" title="Search public ingredients">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                        <div id="public-ingredients-results" class="mt-2">
+                                            <p class="text-muted text-center">Search for ingredients shared by other users.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quick Add Common Items -->
+                            <div class="mb-4">
+                                <h6>Quick Add Common Items</h6>
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="quickAdd('apple', 100, 52, 0.3, 14, 0.2)">
+                                            🍎 Apple (100g)
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="quickAdd('banana', 100, 89, 1.1, 23, 0.3)">
+                                            🍌 Banana (100g)
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="quickAdd('rice', 100, 130, 2.7, 28, 0.3)">
+                                            🍚 White Rice (100g)
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="quickAdd('chicken-breast', 100, 165, 31, 0, 3.6)">
+                                            🍗 Chicken Breast (100g)
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="quickAdd('bread', 30, 80, 2.4, 15, 1)">
+                                            🍞 Bread (1 slice)
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="quickAdd('milk', 240, 150, 8, 12, 8)">
+                                            🥛 Milk (1 cup)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Manual Entry -->
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Manual Entry</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="manual-entry-form">
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="item-name" class="form-label">Item Name</label>
+                                                <input type="text" class="form-control" id="item-name" required>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="serving-amount" class="form-label">Amount (g)</label>
+                                                <input type="number" class="form-control" id="serving-amount" step="0.1" min="0" required>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-3 mb-3">
+                                                <label for="manual-calories" class="form-label">Calories</label>
+                                                <input type="number" class="form-control" id="manual-calories" step="0.1" min="0" required>
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label for="manual-protein" class="form-label">Protein (g)</label>
+                                                <input type="number" class="form-control" id="manual-protein" step="0.1" min="0">
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label for="manual-carbs" class="form-label">Carbs (g)</label>
+                                                <input type="number" class="form-control" id="manual-carbs" step="0.1" min="0">
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label for="manual-fat" class="form-label">Fat (g)</label>
+                                                <input type="number" class="form-control" id="manual-fat" step="0.1" min="0">
+                                            </div>
+                                        </div>
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="fas fa-plus me-1"></i>Add Item
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Meal Items -->
+                    <div class="card mt-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Current Meal</h5>
+                            <button type="button" id="clear-meal" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash me-1"></i>Clear All
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="meal-items">
+                                <p class="text-muted text-center">No items added yet. Search or add items above to start calculating.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nutrition Summary -->
+                <div class="col-lg-4">
+                    <div class="sticky-top">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-pie me-2"></i>Nutrition Summary
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="nutrition-summary">
+                                    <div class="row text-center mb-3">
+                                        <div class="col-12">
+                                            <div class="display-4 text-primary" id="total-calories">0</div>
+                                            <small class="text-muted">Total Calories</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="macronutrients">
+                                        <div class="macro-item mb-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-drumstick-bite text-danger me-1"></i>Protein</span>
+                                                <strong><span id="total-protein">0</span>g</strong>
+                                            </div>
+                                            <div class="progress mt-1 progress-bar-slim">
+                                                <div id="protein-bar" class="progress-bar bg-danger"></div>
+                                            </div>
+                                            <small class="text-muted"><span id="protein-calories">0</span> cal (<span id="protein-percent">0</span>%)</small>
+                                        </div>
+                                        
+                                        <div class="macro-item mb-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-bread-slice text-warning me-1"></i>Carbs</span>
+                                                <strong><span id="total-carbs">0</span>g</strong>
+                                            </div>
+                                            <div class="progress mt-1 progress-bar-slim">
+                                                <div id="carbs-bar" class="progress-bar bg-warning"></div>
+                                            </div>
+                                            <small class="text-muted"><span id="carbs-calories">0</span> cal (<span id="carbs-percent">0</span>%)</small>
+                                        </div>
+                                        
+                                        <div class="macro-item mb-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-tint text-success me-1"></i>Fat</span>
+                                                <strong><span id="total-fat">0</span>g</strong>
+                                            </div>
+                                            <div class="progress mt-1 progress-bar-slim">
+                                                <div id="fat-bar" class="progress-bar bg-success"></div>
+                                            </div>
+                                            <small class="text-muted"><span id="fat-calories">0</span> cal (<span id="fat-percent">0</span>%)</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Daily Goals Comparison -->
+                                    {% if current_user.is_authenticated %}
+                                    <div class="daily-goals mt-3 pt-3 border-top">
+                                        <h6>Daily Goals Progress</h6>
+                                        <div class="goal-progress">
+                                            <div class="d-flex justify-content-between">
+                                                <small>Calories</small>
+                                                <small><span id="goal-calories">{{ current_user.daily_calorie_goal or 2000 }}</span> goal</small>
+                                            </div>
+                                            <div class="progress mb-2 progress-bar-thin">
+                                                <div id="calorie-goal-bar" class="progress-bar"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Action Buttons -->
+                                    <div class="d-grid gap-2 mt-3">
+                                        <button type="button" id="save-meal" class="btn btn-success" disabled>
+                                            <i class="fas fa-save me-1"></i>Save Meal
+                                        </button>
+                                        <button type="button" id="export-nutrition" class="btn btn-outline-primary" disabled>
+                                            <i class="fas fa-download me-1"></i>Export Data
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let mealItems = [];
+let itemCounter = 0;
+
+$(document).ready(function() {
+    updateNutritionSummary();
+    
+    // Check if there's a product_id in URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const productId = urlParams.get('product_id');
+    if (productId) {
+        loadProductById(productId);
+    }
+});
+
+// Product search functionality
+$('#search-btn').click(function() {
+    searchProducts();
+});
+
+$('#product-search').keypress(function(e) {
+    if (e.which === 13) {
+        searchProducts();
+    }
+});
+
+// Recipe search functionality
+$('#search-recipe-btn').click(function() {
+    searchRecipes();
+});
+
+$('#recipe-search').keypress(function(e) {
+    if (e.which === 13) {
+        searchRecipes();
+    }
+});
+
+// Load personal ingredients
+$('#load-ingredients-btn').click(function() {
+    loadPersonalIngredients();
+});
+
+// Public ingredients search functionality
+$('#search-public-ingredients-btn').click(function() {
+    searchPublicIngredients();
+});
+
+$('#public-ingredient-search').keypress(function(e) {
+    if (e.which === 13) {
+        searchPublicIngredients();
+    }
+});
+
+function searchProducts() {
+    const query = $('#product-search').val().trim();
+    if (!query) return;
+    
+    showLoading($('#search-btn'));
+    
+    $.ajax({
+        url: `/api/product/search?q=${encodeURIComponent(query)}`,
+        method: 'GET',
+        success: function(response) {
+            displaySearchResults(response.products || []);
+        },
+        error: function() {
+            $('#search-results').html('<div class="alert alert-warning">No products found or search error.</div>');
+        },
+        complete: function() {
+            hideLoading($('#search-btn'), '<i class="fas fa-search"></i>');
+        }
+    });
+}
+
+function displaySearchResults(products) {
+    if (products.length === 0) {
+        $('#search-results').html('<div class="alert alert-info">No products found. Try a different search term.</div>');
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    products.forEach(product => {
+        const nutrition = product.nutrition || {};
+        html += `
+            <div class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">${product.name}</h6>
+                        <p class="mb-1 text-muted">${product.brand || 'Unknown brand'}</p>
+                        <small>Calories: ${nutrition.calories || 'N/A'} | Serving: ${product.serving_size || 'N/A'}g</small>
+                    </div>
+                    <button class="btn btn-sm btn-success" onclick="addProductToMeal(${product.id}, '${product.name}', ${nutrition.calories || 0}, ${nutrition.protein_g || 0}, ${nutrition.carbohydrates_g || 0}, ${nutrition.fat_total_g || 0}, ${product.serving_size || 100})">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    $('#search-results').html(html);
+}
+
+function searchRecipes() {
+    const query = $('#recipe-search').val().trim();
+    if (!query) return;
+    
+    showLoading($('#search-recipe-btn'));
+    
+    $.ajax({
+        url: `/api/recipe/search?q=${encodeURIComponent(query)}`,
+        method: 'GET',
+        success: function(response) {
+            displayRecipeResults(response.recipes || []);
+        },
+        error: function() {
+            $('#recipe-search-results').html('<div class="alert alert-warning">No recipes found or search error.</div>');
+        },
+        complete: function() {
+            hideLoading($('#search-recipe-btn'), '<i class="fas fa-search"></i>');
+        }
+    });
+}
+
+function displayRecipeResults(recipes) {
+    if (recipes.length === 0) {
+        $('#recipe-search-results').html('<div class="alert alert-info">No recipes found. Try a different search term.</div>');
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    recipes.forEach(recipe => {
+        html += `
+            <div class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">${recipe.name}</h6>
+                        <p class="mb-1 text-muted">${recipe.description || 'No description'}</p>
+                        <small>
+                            Calories: ${recipe.calories || 'N/A'} per serving | 
+                            Servings: ${recipe.servings || 1} | 
+                            ${recipe.category ? 'Category: ' + recipe.category : ''}
+                        </small>
+                        ${recipe.protein > 0 || recipe.carbs > 0 || recipe.fat > 0 ? 
+                            `<br><small class="text-muted">P: ${recipe.protein}g | C: ${recipe.carbs}g | F: ${recipe.fat}g</small>` : ''}
+                    </div>
+                    <button class="btn btn-sm btn-success" onclick="addRecipeToMeal(${recipe.id}, '${recipe.name.replace(/'/g, "\\'")}', ${recipe.calories || 0}, ${recipe.protein || 0}, ${recipe.carbs || 0}, ${recipe.fat || 0}, ${recipe.servings || 1})">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    $('#recipe-search-results').html(html);
+}
+
+function loadPersonalIngredients() {
+    showLoading($('#load-ingredients-btn'));
+    
+    $.ajax({
+        url: '/api/ingredients/personal',
+        method: 'GET',
+        success: function(response) {
+            displayIngredientResults(response.ingredients || []);
+        },
+        error: function() {
+            $('#ingredients-results').html('<div class="alert alert-warning">Failed to load ingredients. Please try again.</div>');
+        },
+        complete: function() {
+            hideLoading($('#load-ingredients-btn'), '<i class="fas fa-sync me-1"></i>Load My Ingredients');
+        }
+    });
+}
+
+function displayIngredientResults(ingredients) {
+    if (ingredients.length === 0) {
+        $('#ingredients-results').html('<div class="alert alert-info">You don\'t have any personal ingredients yet. Add them from the "My Ingredients" page.</div>');
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    ingredients.forEach(ing => {
+        html += `
+            <div class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">${ing.name}</h6>
+                        ${ing.brand ? `<p class="mb-1 text-muted">${ing.brand}</p>` : ''}
+                        <small>
+                            Calories: ${ing.calories || 0} per 100g | 
+                            P: ${ing.protein || 0}g | C: ${ing.carbs || 0}g | F: ${ing.fat || 0}g
+                        </small>
+                    </div>
+                    <button class="btn btn-sm btn-success" onclick="addIngredientToMeal(${ing.id}, '${ing.name.replace(/'/g, "\\'")}', ${ing.calories || 0}, ${ing.protein || 0}, ${ing.carbs || 0}, ${ing.fat || 0})">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    $('#ingredients-results').html(html);
+}
+
+function searchPublicIngredients() {
+    const query = $('#public-ingredient-search').val().trim();
+    
+    showLoading($('#search-public-ingredients-btn'));
+    
+    const url = query 
+        ? `/api/ingredients/public?q=${encodeURIComponent(query)}`
+        : '/api/ingredients/public';
+    
+    $.ajax({
+        url: url,
+        method: 'GET',
+        success: function(response) {
+            displayPublicIngredientResults(response.ingredients || []);
+        },
+        error: function() {
+            $('#public-ingredients-results').html('<div class="alert alert-warning">Failed to search public ingredients. Please try again.</div>');
+        },
+        complete: function() {
+            hideLoading($('#search-public-ingredients-btn'), '<i class="fas fa-search"></i>');
+        }
+    });
+}
+
+function displayPublicIngredientResults(ingredients) {
+    if (ingredients.length === 0) {
+        $('#public-ingredients-results').html('<div class="alert alert-info">No public ingredients found. Try a different search term or check back later.</div>');
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    ingredients.forEach(ing => {
+        html += `
+            <div class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">
+                            ${ing.name}
+                            <span class="badge bg-success ms-2" title="Public ingredient shared by another user">
+                                <i class="fas fa-globe"></i> Public
+                            </span>
+                        </h6>
+                        ${ing.brand ? `<p class="mb-1 text-muted">${ing.brand}</p>` : ''}
+                        ${ing.category ? `<span class="badge bg-secondary mb-1">${ing.category}</span>` : ''}
+                        <small class="d-block mt-1">
+                            Calories: ${ing.calories || 0} per 100g | 
+                            P: ${ing.protein || 0}g | C: ${ing.carbs || 0}g | F: ${ing.fat || 0}g
+                        </small>
+                    </div>
+                    <button class="btn btn-sm btn-success" onclick="addIngredientToMeal(${ing.id}, '${ing.name.replace(/'/g, "\\'")}', ${ing.calories || 0}, ${ing.protein || 0}, ${ing.carbs || 0}, ${ing.fat || 0})">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    $('#public-ingredients-results').html(html);
+}
+
+// Manual entry form
+$('#manual-entry-form').submit(function(e) {
+    e.preventDefault();
+    
+    const name = $('#item-name').val();
+    const amount = parseFloat($('#serving-amount').val());
+    const calories = parseFloat($('#manual-calories').val());
+    const protein = parseFloat($('#manual-protein').val()) || 0;
+    const carbs = parseFloat($('#manual-carbs').val()) || 0;
+    const fat = parseFloat($('#manual-fat').val()) || 0;
+    
+    addMealItem(name, amount, calories, protein, carbs, fat);
+    
+    // Reset form
+    this.reset();
+});
+
+// Quick add functions
+function quickAdd(name, amount, calories, protein, carbs, fat) {
+    addMealItem(name, amount, calories, protein, carbs, fat);
+}
+
+function addProductToMeal(productId, name, calories, protein, carbs, fat, defaultServing) {
+    const amount = prompt(`Enter amount in grams (default: ${defaultServing}g):`, defaultServing) || defaultServing;
+    const parsedAmount = parseFloat(amount);
+    
+    if (parsedAmount > 0) {
+        // Calculate nutrition for the specified amount
+        const ratio = parsedAmount / defaultServing;
+        addMealItem(name, parsedAmount, calories * ratio, protein * ratio, carbs * ratio, fat * ratio);
+    }
+}
+
+function addRecipeToMeal(recipeId, name, caloriesPerServing, protein, carbs, fat, servings) {
+    const numServings = prompt(`Enter number of servings (default: 1):`, '1') || '1';
+    const parsedServings = parseFloat(numServings);
+    
+    if (parsedServings > 0) {
+        // Calculate total nutrition for the specified number of servings
+        const totalCalories = caloriesPerServing * parsedServings;
+        const totalProtein = protein * parsedServings;
+        const totalCarbs = carbs * parsedServings;
+        const totalFat = fat * parsedServings;
+        
+        addMealItem(`${name} (${parsedServings} serving${parsedServings > 1 ? 's' : ''})`, 
+                    parsedServings, totalCalories, totalProtein, totalCarbs, totalFat);
+    }
+}
+
+function addIngredientToMeal(ingredientId, name, caloriesPer100g, protein, carbs, fat) {
+    const amount = prompt(`Enter amount in grams (nutrition is per 100g):`, '100') || '100';
+    const parsedAmount = parseFloat(amount);
+    
+    if (parsedAmount > 0) {
+        // Calculate nutrition for the specified amount (nutrition is stored per 100g)
+        const ratio = parsedAmount / 100;
+        addMealItem(name, parsedAmount, caloriesPer100g * ratio, protein * ratio, carbs * ratio, fat * ratio);
+    }
+}
+
+function addMealItem(name, amount, calories, protein, carbs, fat) {
+    const item = {
+        id: ++itemCounter,
+        name: name,
+        amount: amount,
+        calories: calories,
+        protein: protein,
+        carbs: carbs,
+        fat: fat
+    };
+    
+    mealItems.push(item);
+    updateMealDisplay();
+    updateNutritionSummary();
+}
+
+function updateMealDisplay() {
+    if (mealItems.length === 0) {
+        $('#meal-items').html('<p class="text-muted text-center">No items added yet. Search or add items above to start calculating.</p>');
+        return;
+    }
+    
+    let html = '';
+    mealItems.forEach(item => {
+        html += `
+            <div class="meal-item border rounded p-3 mb-2" data-item-id="${item.id}">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h6 class="mb-1">${item.name}</h6>
+                        <small class="text-muted">${item.amount}g</small>
+                    </div>
+                    <div class="col-md-4">
+                        <small>
+                            ${Math.round(item.calories)} cal<br>
+                            P: ${item.protein.toFixed(1)}g | C: ${item.carbs.toFixed(1)}g | F: ${item.fat.toFixed(1)}g
+                        </small>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="editMealItem(${item.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeMealItem(${item.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    $('#meal-items').html(html);
+    
+    // Enable/disable action buttons
+    const hasItems = mealItems.length > 0;
+    $('#save-meal, #export-nutrition').prop('disabled', !hasItems);
+}
+
+function editMealItem(itemId) {
+    const item = mealItems.find(i => i.id === itemId);
+    if (!item) return;
+    
+    const newAmount = prompt(`Edit amount for ${item.name} (grams):`, item.amount);
+    if (newAmount && parseFloat(newAmount) > 0) {
+        const ratio = parseFloat(newAmount) / item.amount;
+        item.amount = parseFloat(newAmount);
+        item.calories *= ratio;
+        item.protein *= ratio;
+        item.carbs *= ratio;
+        item.fat *= ratio;
+        
+        updateMealDisplay();
+        updateNutritionSummary();
+    }
+}
+
+function removeMealItem(itemId) {
+    mealItems = mealItems.filter(item => item.id !== itemId);
+    updateMealDisplay();
+    updateNutritionSummary();
+}
+
+function updateNutritionSummary() {
+    const totals = mealItems.reduce((acc, item) => ({
+        calories: acc.calories + item.calories,
+        protein: acc.protein + item.protein,
+        carbs: acc.carbs + item.carbs,
+        fat: acc.fat + item.fat
+    }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+    
+    // Update display
+    $('#total-calories').text(Math.round(totals.calories));
+    $('#total-protein').text(totals.protein.toFixed(1));
+    $('#total-carbs').text(totals.carbs.toFixed(1));
+    $('#total-fat').text(totals.fat.toFixed(1));
+    
+    // Calculate macro percentages
+    const proteinCal = totals.protein * 4;
+    const carbsCal = totals.carbs * 4;
+    const fatCal = totals.fat * 9;
+    const totalMacroCal = proteinCal + carbsCal + fatCal;
+    
+    if (totalMacroCal > 0) {
+        const proteinPercent = (proteinCal / totalMacroCal * 100).toFixed(0);
+        const carbsPercent = (carbsCal / totalMacroCal * 100).toFixed(0);
+        const fatPercent = (fatCal / totalMacroCal * 100).toFixed(0);
+        
+        $('#protein-calories').text(Math.round(proteinCal));
+        $('#protein-percent').text(proteinPercent);
+        $('#protein-bar').css('width', proteinPercent + '%');
+        
+        $('#carbs-calories').text(Math.round(carbsCal));
+        $('#carbs-percent').text(carbsPercent);
+        $('#carbs-bar').css('width', carbsPercent + '%');
+        
+        $('#fat-calories').text(Math.round(fatCal));
+        $('#fat-percent').text(fatPercent);
+        $('#fat-bar').css('width', fatPercent + '%');
+    } else {
+        $('#protein-calories, #carbs-calories, #fat-calories').text('0');
+        $('#protein-percent, #carbs-percent, #fat-percent').text('0');
+        $('#protein-bar, #carbs-bar, #fat-bar').css('width', '0%');
+    }
+    
+    // Update daily goal progress
+    const dailyGoal = parseFloat($('#goal-calories').text()) || 2000;
+    const goalPercent = Math.min((totals.calories / dailyGoal * 100), 100);
+    $('#calorie-goal-bar').css('width', goalPercent + '%');
+    
+    if (goalPercent > 90) {
+        $('#calorie-goal-bar').removeClass('bg-primary bg-warning').addClass('bg-success');
+    } else if (goalPercent > 70) {
+        $('#calorie-goal-bar').removeClass('bg-primary bg-success').addClass('bg-warning');
+    } else {
+        $('#calorie-goal-bar').removeClass('bg-warning bg-success').addClass('bg-primary');
+    }
+}
+
+// Clear meal
+$('#clear-meal').click(function() {
+    if (confirm('Are you sure you want to clear all items?')) {
+        mealItems = [];
+        updateMealDisplay();
+        updateNutritionSummary();
+    }
+});
+
+// Save meal functionality
+$('#save-meal').click(function() {
+    if (mealItems.length === 0) return;
+    
+    const mealName = prompt('Enter a name for this meal:', 'Custom Meal');
+    if (!mealName) return;
+    
+    // Here you would typically save to backend
+    alert('Meal saved functionality would be implemented here.');
+});
+
+// Export functionality
+$('#export-nutrition').click(function() {
+    if (mealItems.length === 0) return;
+    
+    const totals = mealItems.reduce((acc, item) => ({
+        calories: acc.calories + item.calories,
+        protein: acc.protein + item.protein,
+        carbs: acc.carbs + item.carbs,
+        fat: acc.fat + item.fat
+    }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+    
+    const exportData = {
+        meal_items: mealItems,
+        totals: totals,
+        export_date: new Date().toISOString()
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'nutrition_data.json';
+    link.click();
+    
+    URL.revokeObjectURL(url);
+});
+
+function loadProductById(productId) {
+    $.ajax({
+        url: `/api/product/${productId}`,
+        method: 'GET',
+        success: function(response) {
+            const product = response.product;
+            const nutrition = product.nutrition || {};
+            addProductToMeal(
+                product.id,
+                product.name,
+                nutrition.calories || 0,
+                nutrition.protein_g || 0,
+                nutrition.carbohydrates_g || 0,
+                nutrition.fat_total_g || 0,
+                product.serving_size || 100
+            );
+        },
+        error: function() {
+            console.log('Could not load product');
+        }
+    });
+}
+</script>
+{% endblock %}

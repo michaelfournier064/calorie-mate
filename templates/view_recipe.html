@@ -8,16 +8,16 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2 class="mb-0"><i class="fas fa-book me-2"></i>{{ recipe.name }}</h2>
+                {% if current_user.is_authenticated and (current_user.id == recipe.created_by_user_id or current_user.is_moderator()) %}
                 <div class="btn-group">
-                    <a href="{{ url_for('edit_recipe', id=recipe.id) }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('main.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-secondary">
                         <i class="fas fa-edit me-1"></i>Edit
                     </a>
-                    <a href="{{ url_for('delete_recipe', id=recipe.id) }}" 
-                       class="btn btn-outline-danger"
-                       onclick="return confirm('Are you sure you want to delete this recipe?')">
+                    <button class="btn btn-outline-danger" onclick="deleteRecipe('{{ recipe.id }}')">
                         <i class="fas fa-trash me-1"></i>Delete
-                    </a>
+                    </button>
                 </div>
+                {% endif %}
             </div>
             <div class="card-body">
                 <div class="row">
@@ -27,7 +27,7 @@
                             {% for ingredient in recipe.ingredients.split('\n') %}
                                 {% if ingredient.strip() %}
                                     <div class="ingredient-item mb-2">
-                                        <i class="fas fa-circle text-primary me-2" style="font-size: 0.5rem;"></i>
+                                        <i class="fas fa-circle text-primary me-2 fa-small"></i>
                                         {{ ingredient.strip() }}
                                     </div>
                                 {% endif %}
@@ -53,6 +53,104 @@
                 
                 <hr class="my-4">
                 
+                <!-- Nutrition Facts -->
+                {% if nutrition and (nutrition.calories_per_serving or nutrition.protein_g or nutrition.carbohydrates_g or nutrition.fat_total_g or nutrition.fiber_g or nutrition.sugars_g or nutrition.sodium_mg) %}
+                <div class="mb-4">
+                    <h4><i class="fas fa-chart-pie me-2"></i>Nutrition Facts</h4>
+                    <div class="card nutrition-label">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Per Serving</h5>
+                                    {% if nutrition.calories_per_serving %}
+                                    <div class="nutrition-item mb-2">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong>Calories</strong>
+                                            <strong>{{ "%.0f"|format(nutrition.calories_per_serving) }}</strong>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <hr class="my-2">
+                                    
+                                    {% if nutrition.fat_total_g %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Total Fat</span>
+                                            <span>{{ "%.1f"|format(nutrition.fat_total_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.protein_g %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Protein</span>
+                                            <span>{{ "%.1f"|format(nutrition.protein_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.carbohydrates_g %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Total Carbohydrates</span>
+                                            <span>{{ "%.1f"|format(nutrition.carbohydrates_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.fiber_g %}
+                                    <div class="nutrition-item mb-1 ms-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Dietary Fiber</span>
+                                            <span>{{ "%.1f"|format(nutrition.fiber_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.sugars_g %}
+                                    <div class="nutrition-item mb-1 ms-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Total Sugars</span>
+                                            <span>{{ "%.1f"|format(nutrition.sugars_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.sodium_mg %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Sodium</span>
+                                            <span>{{ "%.0f"|format(nutrition.sodium_mg) }}mg</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-muted small">
+                                        <p><strong>Servings:</strong> {{ recipe.servings or 1 }}</p>
+                                        {% if recipe.prep_time_minutes %}
+                                        <p><strong>Prep Time:</strong> {{ recipe.prep_time_minutes }} minutes</p>
+                                        {% endif %}
+                                        {% if recipe.cook_time_minutes %}
+                                        <p><strong>Cook Time:</strong> {{ recipe.cook_time_minutes }} minutes</p>
+                                        {% endif %}
+                                        {% if recipe.prep_time_minutes and recipe.cook_time_minutes %}
+                                        <p><strong>Total Time:</strong> {{ recipe.prep_time_minutes + recipe.cook_time_minutes }} minutes</p>
+                                        {% endif %}
+                                        {% if recipe.description %}
+                                        <p class="mt-2">{{ recipe.description }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr class="my-4">
+                {% endif %}
+                
                 <div class="row text-center">
                     <div class="col-md-4">
                         <div class="card bg-light">
@@ -68,7 +166,7 @@
                             <div class="card-body">
                                 <i class="fas fa-clock fa-2x text-success mb-2"></i>
                                 <h6>Last Updated</h6>
-                                <p class="text-muted mb-0">{{ recipe.created_at.strftime('%B %d, %Y') }}</p>
+                                <p class="text-muted mb-0">{{ recipe.updated_at.strftime('%B %d, %Y') if recipe.updated_at else recipe.created_at.strftime('%B %d, %Y') }}</p>
                             </div>
                         </div>
                     </div>
@@ -86,12 +184,14 @@
         </div>
         
         <div class="text-center mt-4">
-            <a href="{{ url_for('recipes') }}" class="btn btn-secondary me-2">
+            <a href="{{ url_for('main.recipes') }}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left me-1"></i>Back to Recipes
             </a>
-            <a href="{{ url_for('add_recipe') }}" class="btn btn-recipe">
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('main.add_recipe') }}" class="btn btn-recipe ms-2">
                 <i class="fas fa-plus me-1"></i>Add Another Recipe
             </a>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -111,5 +211,63 @@
     align-items: center;
     justify-content: center;
 }
+
+.nutrition-label {
+    background: white;
+    border: 2px solid #333;
+    border-radius: 8px;
+    font-family: 'Arial', sans-serif;
+}
+
+.nutrition-item {
+    font-size: 0.95rem;
+}
+
+.nutrition-label h5 {
+    font-weight: bold;
+    color: #333;
+    border-bottom: 2px solid #333;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
 </style>
+
+<script>
+function deleteRecipe(recipeId) {
+    if (!confirm('Are you sure you want to delete this recipe? This action cannot be undone.')) {
+        return;
+    }
+    
+    fetch(`/recipes/delete/${recipeId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Recipe deleted successfully!');
+            window.location.href = '{{ url_for("main.recipes") }}';
+        } else {
+            alert('Error: ' + (data.error || 'Failed to delete recipe'));
+        }
+    })
+    .catch(error => {
+        console.error('Delete error:', error);
+        alert('An error occurred while deleting the recipe');
+    });
+}
+
+function getCsrfToken() {
+    // Get CSRF token from meta tag or form
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (token) return token;
+    
+    // Fallback: try to get from a form
+    const csrfInput = document.querySelector('input[name="csrf_token"]');
+    return csrfInput ? csrfInput.value : '';
+}
+</script>
 {% endblock %}

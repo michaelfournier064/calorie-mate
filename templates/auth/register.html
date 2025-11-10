@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Register - CalorieMate{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white text-center">
+                    <h3 class="mb-0">
+                        <i class="fas fa-user-plus me-2"></i>Join CalorieMate
+                    </h3>
+                    <p class="mb-0 opacity-75">Create your free account to get started</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">
+                                    <i class="fas fa-user me-1"></i>First Name
+                                </label>
+                                <input type="text" class="form-control" id="first_name" 
+                                       name="first_name" placeholder="John">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">
+                                    <i class="fas fa-user me-1"></i>Last Name
+                                </label>
+                                <input type="text" class="form-control" id="last_name" 
+                                       name="last_name" placeholder="Doe">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="username" class="form-label">
+                                <i class="fas fa-at me-1"></i>Username *
+                            </label>
+                            <input type="text" class="form-control" id="username" 
+                                   name="username" required minlength="3" 
+                                   placeholder="Choose a unique username">
+                            <div class="form-text">
+                                Must be at least 3 characters long and unique
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope me-1"></i>Email Address *
+                            </label>
+                            <input type="email" class="form-control" id="email" 
+                                   name="email" required placeholder="your.email@example.com">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-1"></i>Password *
+                            </label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" 
+                                       name="password" required minlength="8" 
+                                       placeholder="Create a strong password">
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        onclick="togglePassword('password')" title="Show/Hide Password">
+                                    <i class="fas fa-eye" id="password-toggle"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                Minimum 8 characters with letters and numbers recommended
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">
+                                <i class="fas fa-lock me-1"></i>Confirm Password *
+                            </label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="confirm_password" 
+                                       name="confirm_password" required minlength="8" 
+                                       placeholder="Confirm your password">
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        onclick="togglePassword('confirm_password')" title="Show/Hide Password">
+                                    <i class="fas fa-eye" id="confirm-password-toggle"></i>
+                                </button>
+                            </div>
+                            <div id="password-match-feedback" class="form-text"></div>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="terms_agreement" 
+                                   required>
+                            <label class="form-check-label" for="terms_agreement">
+                                I agree to the 
+                                <a href="{{ url_for('main.terms') }}" target="_blank" class="text-decoration-none">
+                                    Terms of Service
+                                </a> 
+                                and 
+                                <a href="{{ url_for('main.privacy') }}" target="_blank" class="text-decoration-none">
+                                    Privacy Policy
+                                </a>
+                            </label>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="newsletter_opt_in">
+                            <label class="form-check-label" for="newsletter_opt_in">
+                                Send me tips and updates about nutrition and recipes (optional)
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-recipe btn-lg" id="register-btn">
+                                <i class="fas fa-rocket me-2"></i>Create My Account
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center bg-light">
+                    <p class="mb-0">
+                        Already have an account? 
+                        <a href="{{ url_for('auth.login') }}" class="text-decoration-none">
+                            <strong>Sign in here</strong>
+                        </a>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Feature Benefits -->
+            <div class="row mt-4">
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-barcode fa-2x text-primary mb-2"></i>
+                    <h6>Barcode Scanning</h6>
+                    <p class="small text-muted">Instantly scan products for nutrition data</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-calculator fa-2x text-success mb-2"></i>
+                    <h6>Nutrition Calculator</h6>
+                    <p class="small text-muted">Calculate calories and macros precisely</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-book fa-2x text-info mb-2"></i>
+                    <h6>Recipe Management</h6>
+                    <p class="small text-muted">Save and organize your favorite recipes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePassword(fieldId) {
+    const passwordField = document.getElementById(fieldId);
+    const toggleIcon = document.getElementById(fieldId + '-toggle');
+    
+    if (passwordField.type === 'password') {
+        passwordField.type = 'text';
+        toggleIcon.className = 'fas fa-eye-slash';
+    } else {
+        passwordField.type = 'password';
+        toggleIcon.className = 'fas fa-eye';
+    }
+}
+
+// Password confirmation validation
+$('#confirm_password').on('input', function() {
+    const password = $('#password').val();
+    const confirmPassword = $(this).val();
+    const feedback = $('#password-match-feedback');
+    
+    if (confirmPassword.length > 0) {
+        if (password === confirmPassword) {
+            feedback.text('✓ Passwords match').removeClass('text-danger').addClass('text-success');
+            $('#register-btn').prop('disabled', false);
+        } else {
+            feedback.text('✗ Passwords do not match').removeClass('text-success').addClass('text-danger');
+            $('#register-btn').prop('disabled', true);
+        }
+    } else {
+        feedback.text('');
+        $('#register-btn').prop('disabled', false);
+    }
+});
+
+// Username availability check (placeholder)
+$('#username').on('blur', function() {
+    const username = $(this).val().trim();
+    if (username.length >= 3) {
+        // This would normally check username availability via AJAX
+        console.log('Checking username availability:', username);
+    }
+});
+
+// Auto-focus on first name field
+$(document).ready(function() {
+    $('#first_name').focus();
+});
+
+// Form validation on submit
+$('form').on('submit', function(e) {
+    const password = $('#password').val();
+    const confirmPassword = $('#confirm_password').val();
+    
+    if (password !== confirmPassword) {
+        e.preventDefault();
+        alert('Passwords do not match!');
+        return false;
+    }
+    
+    if (password.length < 8) {
+        e.preventDefault();
+        alert('Password must be at least 8 characters long!');
+        return false;
+    }
+    
+    // Show loading state
+    showLoading($('#register-btn'));
+});
+</script>
+{% endblock %}

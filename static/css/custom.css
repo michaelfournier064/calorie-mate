@@ -1,0 +1,88 @@
+/* CalorieMate Custom Styles - Updated Color Scheme */
+
+:root {
+    --brand-primary: #c48027;
+    --gradient-start: #a77428;
+    --gradient-end: #c96c20;
+    --gradient-hover-start: #c96f25;
+    --gradient-hover-end: #a0581e;
+    --hero-green-start: #28a745;
+    --hero-green-end: #20c997;
+}
+
+/* Homepage hero section gradient */
+.hero-gradient {
+    background: linear-gradient(135deg, var(--hero-green-start), var(--hero-green-end)) !important;
+}
+
+.hero-divider {
+    border-color: rgba(255,255,255,0.3) !important;
+}
+
+/* Recipe card image styling */
+.recipe-card-image {
+    height: 200px;
+    object-fit: cover;
+}
+
+.recipe-card-placeholder {
+    height: 200px;
+}
+
+/* Barcode scanner specific styles */
+.scanner-hidden {
+    display: none;
+}
+
+/* Font size utility */
+.fa-small {
+    font-size: 0.5rem;
+}
+
+/* Brand styling */
+.navbar-brand {
+    font-weight: 600;
+    color: var(--brand-primary) !important;
+}
+
+/* Dashboard specific styles */
+.calorie-progress-bar {
+    height: 25px;
+}
+
+/* Custom gradient buttons with brand colors */
+.btn-recipe {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    border: none;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-recipe:hover {
+    background: linear-gradient(135deg, var(--gradient-hover-start), var(--gradient-hover-end));
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-brand {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    border: none;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-brand:hover {
+    background: linear-gradient(135deg, var(--gradient-hover-start), var(--gradient-hover-end));
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Alert and notification styling */
+.alert-dismissible .btn-close {
+    padding: 0.75rem 1rem;
+}
+
+/* Form enhancements */
+.input-group .btn-outline-secondary {
+    border-left: 0;
+}

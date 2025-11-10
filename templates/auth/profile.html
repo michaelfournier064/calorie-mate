@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - CalorieMate{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Profile Header -->
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-user-circle me-2"></i>My Profile</h1>
+                <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-primary">
+                    <i class="fas fa-edit me-1"></i>Edit Profile
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Personal Information -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Personal Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <strong>Username:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {{ user.username }}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <strong>Email:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {{ user.email }}
+                            {% if not user.email_verified %}
+                            <span class="badge bg-warning text-dark ms-2">Unverified</span>
+                            {% else %}
+                            <span class="badge bg-success ms-2">Verified</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <strong>Name:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {% if user.first_name or user.last_name %}
+                                {{ user.first_name or '' }} {{ user.last_name or '' }}
+                            {% else %}
+                                <span class="text-muted">Not specified</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <strong>Bio:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {% if user.bio %}
+                                {{ user.bio }}
+                            {% else %}
+                                <span class="text-muted">No bio added yet</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <strong>Member Since:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'Unknown' }}
+                        </div>
+                    </div>
+                    {% if user.last_login %}
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <strong>Last Login:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {{ user.last_login.strftime('%B %d, %Y at %I:%M %p') if user.last_login else 'Never' }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Nutrition Goals -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bullseye me-2"></i>Nutrition Goals</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <strong>Daily Calorie Goal:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {% if user.daily_calorie_goal %}
+                                {{ user.daily_calorie_goal|int }} calories
+                            {% else %}
+                                <span class="text-muted">Not set</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <strong>Dietary Restrictions:</strong>
+                        </div>
+                        <div class="col-sm-9">
+                            {% if user.dietary_restrictions %}
+                                {{ user.dietary_restrictions }}
+                            {% else %}
+                                <span class="text-muted">None specified</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Account Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2 d-md-block">
+                        <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-key me-1"></i>Change Password
+                        </a>
+                        <a href="{{ url_for('main.my_ingredients') }}" class="btn btn-outline-info">
+                            <i class="fas fa-list me-1"></i>My Ingredients
+                        </a>
+                        {% if user.is_moderator() %}
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-warning">
+                            <i class="fas fa-cog me-1"></i>Admin Panel
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Summary -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Activity Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <div class="h4 mb-0 text-primary" id="recipeCount">-</div>
+                                    <small class="text-muted">Recipes</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <div class="h4 mb-0 text-success" id="savedCount">-</div>
+                                    <small class="text-muted">Saved</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <div class="h4 mb-0 text-info" id="ingredientCount">-</div>
+                                    <small class="text-muted">Ingredients</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <small class="text-muted">Personal statistics</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-external-link-alt me-2"></i>Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{{ url_for('main.dashboard') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                        <a href="{{ url_for('main.recipes') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-book me-2"></i>Browse Recipes
+                        </a>
+                        <a href="{{ url_for('main.barcode_scanner') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-barcode me-2"></i>Barcode Scanner
+                        </a>
+                        <a href="{{ url_for('main.nutrition_calculator') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-calculator me-2"></i>Nutrition Calculator
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load user statistics
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch user statistics
+    fetch('/api/user/statistics')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('recipeCount').textContent = data.statistics.recipes_created || 0;
+                document.getElementById('savedCount').textContent = data.statistics.recipes_saved || 0;
+                document.getElementById('ingredientCount').textContent = data.statistics.personal_ingredients || 0;
+            }
+        })
+        .catch(error => {
+            console.log('Could not load statistics:', error);
+        });
+});
+</script>
+{% endblock %}

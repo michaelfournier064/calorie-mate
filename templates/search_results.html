@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results{% if query %} - "{{ query }}"{% endif %} - CalorieMate{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Search Header -->
+            <div class="mb-4">
+                <h2><i class="fas fa-search me-2"></i>Search Results</h2>
+                {% if query %}
+                <p class="text-muted">Searching for: <strong>"{{ query }}"</strong></p>
+                {% endif %}
+            </div>
+
+            <!-- Enhanced Search Form -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('main.search') }}" class="row g-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <input type="text" class="form-control form-control-lg" name="q" 
+                                       placeholder="Search recipes, products, tags, ingredients..." 
+                                       value="{{ query or '' }}" required>
+                                <button class="btn btn-recipe btn-lg" type="submit">
+                                    <i class="fas fa-search me-1"></i>Search
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select form-select-lg" name="type" onchange="this.form.submit()">
+                                <option value="all" {{ 'selected' if search_type == 'all' else '' }}>All Results</option>
+                                <option value="recipes" {{ 'selected' if search_type == 'recipes' else '' }}>Recipes Only</option>
+                                <option value="products" {{ 'selected' if search_type == 'products' else '' }}>Products Only</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Results Summary -->
+            {% if query and query|length >= 2 %}
+                {% if total_results > 0 %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Found <strong>{{ total_results }}</strong> result{{ 's' if total_results != 1 else '' }} 
+                    {% if search_type == 'all' %}
+                        ({{ recipes|length }} recipe{{ 's' if recipes|length != 1 else '' }}, 
+                         {{ products|length }} product{{ 's' if products|length != 1 else '' }})
+                    {% elif search_type == 'recipes' %}
+                        recipe{{ 's' if recipes|length != 1 else '' }}
+                    {% elif search_type == 'products' %}
+                        product{{ 's' if products|length != 1 else '' }}
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No results found for <strong>"{{ query }}"</strong>. 
+                    <br><small class="mt-1 d-block">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        <strong>Tip:</strong> Make sure your recipes are set to "Public" and "Approved" to appear in search results. 
+                        Try searching without filters by visiting: 
+                        <a href="{{ url_for('main.search', q=query, type=search_type, include_all='true') }}" class="alert-link">Search all items</a>
+                    </small>
+                </div>
+                {% endif %}
+            {% elif query and query|length < 2 %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Please enter at least 2 characters to search.
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Enter a search term above to find recipes, products, or browse by tags.
+                </div>
+            {% endif %}
+
+            <!-- Recipe Results -->
+            {% if search_type in ['all', 'recipes'] and recipes|length > 0 %}
+            <div class="mb-5">
+                <h3 class="mb-3">
+                    <i class="fas fa-book me-2"></i>Recipes 
+                    <span class="badge bg-primary">{{ recipes|length }}</span>
+                </h3>
+                
+                <div class="row">
+                    {% for recipe in recipes %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 recipe-card">
+                            {% if recipe.image_url %}
+                            <img src="{{ recipe.image_url }}" class="card-img-top" alt="{{ recipe.name }}" 
+                                 style="height: 200px; object-fit: cover;">
+                            {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                                 style="height: 200px;">
+                                <i class="fas fa-utensils fa-3x text-muted"></i>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="card-body">
+                                <h5 class="card-title">{{ recipe.name }}</h5>
+                                
+                                {% if recipe.description %}
+                                <p class="card-text text-muted small">
+                                    {{ recipe.description[:120] }}{% if recipe.description|length > 120 %}...{% endif %}
+                                </p>
+                                {% endif %}
+                                
+                                <!-- Recipe Meta Information -->
+                                <div class="recipe-meta mb-2">
+                                    {% if recipe.prep_time_minutes %}
+                                    <small class="text-muted me-3">
+                                        <i class="fas fa-clock"></i> {{ recipe.prep_time_minutes }}min
+                                    </small>
+                                    {% endif %}
+                                    {% if recipe.servings %}
+                                    <small class="text-muted me-3">
+                                        <i class="fas fa-users"></i> {{ recipe.servings }}
+                                    </small>
+                                    {% endif %}
+                                    {% if recipe.difficulty_level %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-signal"></i> {{ recipe.difficulty_level }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Category and Cuisine -->
+                                <div class="mb-2">
+                                    {% if recipe.category %}
+                                    <span class="badge bg-secondary me-1">{{ recipe.category }}</span>
+                                    {% endif %}
+                                    {% if recipe.cuisine_type %}
+                                    <span class="badge bg-info text-dark me-1">{{ recipe.cuisine_type }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Dietary Tags -->
+                                {% if recipe.dietary_tags %}
+                                <div class="mb-2">
+                                    {% for tag in recipe.dietary_tags %}
+                                    <span class="badge bg-success me-1">
+                                        <i class="fas fa-tag"></i> {{ tag }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Rating -->
+                                {% if recipe.average_rating %}
+                                <div class="mt-2">
+                                    <span class="text-warning">
+                                        {% for i in range(5) %}
+                                            {% if i < recipe.average_rating|int %}
+                                                <i class="fas fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </span>
+                                    <small class="text-muted ms-1">({{ recipe.rating_count }} reviews)</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="card-footer bg-transparent">
+                                <a href="{{ url_for('main.view_recipe', recipe_id=recipe.id) }}" 
+                                   class="btn btn-recipe btn-sm w-100">
+                                    <i class="fas fa-eye me-1"></i>View Recipe
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Product Results -->
+            {% if search_type in ['all', 'products'] and products|length > 0 %}
+            <div class="mb-5">
+                <h3 class="mb-3">
+                    <i class="fas fa-shopping-bag me-2"></i>Products 
+                    <span class="badge bg-primary">{{ products|length }}</span>
+                </h3>
+                
+                <div class="row">
+                    {% for product in products %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100">
+                            {% if product.image_url %}
+                            <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" 
+                                 style="height: 200px; object-fit: cover;">
+                            {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                                 style="height: 200px;">
+                                <i class="fas fa-box fa-3x text-muted"></i>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="card-body">
+                                <h5 class="card-title">{{ product.name }}</h5>
+                                
+                                {% if product.brand %}
+                                <p class="text-muted small mb-1">
+                                    <strong>Brand:</strong> {{ product.brand }}
+                                </p>
+                                {% endif %}
+                                
+                                {% if product.description %}
+                                <p class="card-text text-muted small">
+                                    {{ product.description[:100] }}{% if product.description|length > 100 %}...{% endif %}
+                                </p>
+                                {% endif %}
+                                
+                                {% if product.category %}
+                                <span class="badge bg-secondary">{{ product.category }}</span>
+                                {% endif %}
+                                
+                                {% if product.barcode %}
+                                <p class="text-muted small mt-2 mb-0">
+                                    <i class="fas fa-barcode"></i> {{ product.barcode }}
+                                </p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="card-footer bg-transparent">
+                                <a href="{{ url_for('api.get_product', product_id=product.id) }}" 
+                                   class="btn btn-outline-primary btn-sm w-100">
+                                    <i class="fas fa-info-circle me-1"></i>View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- No Results Message -->
+            {% if query and query|length >= 2 and total_results == 0 %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No results found</h4>
+                <p class="text-muted mb-4">
+                    We couldn't find any recipes or products matching <strong>"{{ query }}"</strong>.
+                </p>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <a href="{{ url_for('main.recipes') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-book me-1"></i>Browse All Recipes
+                    </a>
+                    <button onclick="document.querySelector('input[name=q]').focus()" class="btn btn-recipe">
+                        <i class="fas fa-redo me-1"></i>Try Another Search
+                    </button>
+                </div>
+                
+                <!-- Search Tips -->
+                <div class="mt-5">
+                    <h5 class="text-muted mb-3">Search Tips:</h5>
+                    <ul class="list-unstyled text-start d-inline-block">
+                        <li><i class="fas fa-check text-success me-2"></i>Try searching by recipe name, ingredient, or dietary tag</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Use category names like "Dessert", "Main Course", etc.</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Search for tags like "vegan", "gluten-free", "keto"</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Try cuisine types like "Italian", "Mexican", "Asian"</li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .recipe-card {
+        transition: all 0.3s ease;
+    }
+    
+    .recipe-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.35em 0.65em;
+    }
+</style>
+{% endblock %}
+
