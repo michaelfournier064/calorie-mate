@@ -561,18 +561,37 @@ def get_recipe_nutrition(recipe_id):
 @api_bp.route('/recipe/search')
 @login_required
 def search_recipes_api():
-    """Search recipes for nutrition calculator."""
+    """Search recipes for nutrition calculator - includes public recipes and user's personal recipes."""
     try:
         query = request.args.get('q', '').strip()
         
         if not query:
             return jsonify({'recipes': []})
         
-        # Search recipes
-        recipes = Recipe.search(query, filters={'is_public': True, 'is_approved': True}, limit=20)
+        # Search public/approved recipes
+        public_recipes = Recipe.search(query, filters={'is_public': True, 'is_approved': True}, limit=20)
+        
+        # Search user's personal recipes (regardless of public/approved status)
+        personal_recipes = Recipe.search(query, filters={'created_by_user_id': current_user.id}, limit=20)
+        
+        # Combine recipes and remove duplicates using a set of recipe IDs
+        seen_ids = set()
+        all_recipes = []
+        
+        # Add personal recipes first (so they appear first in results)
+        for recipe in personal_recipes:
+            if recipe.id not in seen_ids:
+                all_recipes.append(recipe)
+                seen_ids.add(recipe.id)
+        
+        # Add public recipes that aren't already included
+        for recipe in public_recipes:
+            if recipe.id not in seen_ids:
+                all_recipes.append(recipe)
+                seen_ids.add(recipe.id)
         
         recipe_list = []
-        for recipe in recipes:
+        for recipe in all_recipes:
             nutrition = recipe.get_nutrition()
             recipe_list.append({
                 'id': recipe.id,

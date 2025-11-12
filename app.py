@@ -20,7 +20,7 @@ def create_app():
     
     # Configuration
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-change-in-production')
-    app.config['DATABASE_URL'] = os.getenv('DATABASE_URL', 'mysql+pymysql://root:@localhost:3306/caloriemate')
+    app.config['DATABASE_URL'] = os.getenv('DATABASE_URL', 'mysql+pymysql://admin:jY1tUaJq0ht32iEjVp5Q@calorie-mate.cv44iukwwhax.us-east-2.rds.amazonaws.com:3306/caloriemate')
     app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
     
