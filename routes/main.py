@@ -74,39 +74,72 @@ def dashboard():
                              calorie_goal=2000)
 
 @main_bp.route('/recipes')
+@login_required
 def recipes():
-    """Browse all public recipes with filtering and search."""
+    """Browse user's saved/favorited recipes and personal recipes with filtering and search."""
     try:
+        from db_client import get_db_client
+        
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 12))
         search = request.args.get('search', '').strip()
         category = request.args.get('category', '').strip()
         
-        filters = {'is_public': True, 'is_approved': True}
+        db_client = get_db_client()
         
+        # Base query to get recipes that are either saved by user OR created by user
+        # Using DISTINCT to avoid duplicates if user saved their own recipe
+        base_query = """
+        SELECT DISTINCT r.*, 
+               COALESCE(usr.created_at, r.created_at) as collection_date,
+               CASE WHEN usr.id IS NOT NULL THEN 1 ELSE 0 END as is_saved,
+               CASE WHEN r.created_by_user_id = %s THEN 1 ELSE 0 END as is_own
+        FROM recipes r
+        LEFT JOIN user_saved_recipes usr ON r.id = usr.recipe_id AND usr.user_id = %s
+        WHERE (usr.id IS NOT NULL OR r.created_by_user_id = %s)
+        """
+        params = [current_user.id, current_user.id, current_user.id]
+        
+        # Add category filter if provided
         if category:
-            filters['category'] = category
+            base_query += " AND r.category = %s"
+            params.append(category)
         
+        # Add search filter if provided
         if search:
-            # Use search method for text queries
-            recipes_data = Recipe.search(search, filters=filters, limit=per_page)
-            # Convert to paginated format for template consistency
-            recipes = {
-                'items': recipes_data,
-                'total': len(recipes_data),
-                'page': 1,
-                'per_page': per_page,
-                'pages': 1
-            }
-        else:
-            # Get paginated recipes
-            recipes = Recipe.get_all(page=page, per_page=per_page, filters=filters)
+            search_term = f"%{search}%"
+            base_query += """ AND (
+                r.name LIKE %s 
+                OR r.description LIKE %s 
+                OR r.ingredients LIKE %s
+                OR r.category LIKE %s
+                OR r.cuisine_type LIKE %s
+            )"""
+            params.extend([search_term, search_term, search_term, search_term, search_term])
         
-        # Get categories for filter dropdown
-        categories = Recipe.get_categories()
+        # Order by collection date (most recently saved/created first)
+        base_query += " ORDER BY collection_date DESC"
+        
+        # Get paginated results
+        recipes_result = db_client.fetch_paginated(base_query, tuple(params), page, per_page)
+        
+        # Convert to Recipe objects
+        recipes_result['items'] = [Recipe(**row) for row in recipes_result['items']]
+        
+        # Get categories from both saved recipes and user's own recipes
+        categories_query = """
+        SELECT DISTINCT r.category 
+        FROM recipes r
+        LEFT JOIN user_saved_recipes usr ON r.id = usr.recipe_id AND usr.user_id = %s
+        WHERE (usr.id IS NOT NULL OR r.created_by_user_id = %s) 
+          AND r.category IS NOT NULL AND r.category != ''
+        ORDER BY r.category
+        """
+        categories_result = db_client.execute_query(categories_query, (current_user.id, current_user.id))
+        categories = [row['category'] for row in categories_result]
         
         return render_template('recipes.html',
-                             recipes=recipes,
+                             recipes=recipes_result,
                              categories=categories,
                              current_search=search,
                              current_category=category,
@@ -140,8 +173,12 @@ def view_recipe(recipe_id):
                 flash('Recipe not found or not available.', 'error')
                 return redirect(url_for('main.recipes'))
         
-        # Simplified - these features not fully implemented yet
+        # Check if recipe is saved by current user
         is_saved = False
+        if current_user.is_authenticated:
+            from models import UserSavedRecipe
+            is_saved = UserSavedRecipe.is_saved(current_user.id, recipe_id)
+        
         user_rating = None
         recent_ratings = []
         
