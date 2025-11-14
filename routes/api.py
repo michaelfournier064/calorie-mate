@@ -750,7 +750,27 @@ def add_personal_ingredient():
         ingredient_data['is_public'] = bool(is_public)
         
         # Insert the ingredient
-        ingredient_id = db_client.insert_record('user_personal_ingredients', ingredient_data)
+        query = """
+            INSERT INTO user_personal_ingredients 
+            (user_id, name, brand, category, serving_size, serving_size_unit,
+             calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g,
+             is_public, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+        """
+        
+        ingredient_id = db_client.execute_insert(query, (
+            current_user.id,
+            ingredient_data['name'],
+            ingredient_data['brand'],
+            ingredient_data['category'],
+            ingredient_data['serving_size'],
+            ingredient_data['serving_size_unit'],
+            ingredient_data['calories_per_100g'],
+            ingredient_data['protein_per_100g'],
+            ingredient_data['carbs_per_100g'],
+            ingredient_data['fat_per_100g'],
+            ingredient_data['is_public']
+        ))
         
         if ingredient_id:
             return jsonify({
@@ -815,7 +835,20 @@ def update_personal_ingredient(ingredient_id):
             return jsonify({'success': False, 'message': 'No data to update'}), 400
         
         # Update the ingredient
-        success = db_client.update_record('user_personal_ingredients', update_data, {'id': ingredient_id})
+        if update_data:
+            set_parts = []
+            params = []
+            for key, value in update_data.items():
+                set_parts.append(f"{key} = %s")
+                params.append(value)
+            
+            set_clause = ", ".join(set_parts)
+            params.append(ingredient_id)
+            
+            query = f"UPDATE user_personal_ingredients SET {set_clause}, updated_at = NOW() WHERE id = %s"
+            success = db_client.execute_update(query, tuple(params))
+        else:
+            success = 0
         
         if success:
             return jsonify({
@@ -848,7 +881,9 @@ def delete_personal_ingredient(ingredient_id):
             return jsonify({'success': False, 'message': 'Ingredient not found'}), 404
         
         # Delete the ingredient
-        success = db_client.delete_record('user_personal_ingredients', {'id': ingredient_id})
+        success = db_client.execute_delete(
+            "DELETE FROM user_personal_ingredients WHERE id = %s", (ingredient_id,)
+        )
         
         if success:
             return jsonify({
@@ -938,43 +973,4 @@ def fetch_product_from_external_api(barcode):
     
     return None
 
-@api_bp.route('/user/statistics')
-@login_required
-def user_statistics():
-    """Get user activity statistics."""
-    try:
-        db_client = get_db_client()
-        
-        # Get recipes created by user
-        recipes_created = db_client.execute_query(
-            "SELECT COUNT(*) as count FROM recipes WHERE created_by_user_id = %s",
-            (current_user.id,)
-        )[0]['count']
-        
-        # Get recipes saved by user
-        recipes_saved = db_client.execute_query(
-            "SELECT COUNT(*) as count FROM user_saved_recipes WHERE user_id = %s",
-            (current_user.id,)
-        )[0]['count']
-        
-        # Get personal ingredients count
-        personal_ingredients = db_client.execute_query(
-            "SELECT COUNT(*) as count FROM user_personal_ingredients WHERE user_id = %s",
-            (current_user.id,)
-        )[0]['count']
-        
-        return jsonify({
-            'success': True,
-            'statistics': {
-                'recipes_created': recipes_created,
-                'recipes_saved': recipes_saved,
-                'personal_ingredients': personal_ingredients
-            }
-        })
-        
-    except Exception as e:
-        current_app.logger.error(f"Error fetching user statistics: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Failed to fetch user statistics'
-        }), 500
+# user_statistics() function removed - route exists but function is unused in templates

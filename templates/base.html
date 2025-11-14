@@ -223,7 +223,7 @@
                 </form>
                 
                 <!-- User Menu -->
-                <ul class="navbar-nav">{% if current_user.is_authenticated %}<li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"><i class="fas fa-user-circle me-1"></i>{{ current_user.first_name or current_user.username }}</a><ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="fas fa-user me-2"></i>My Profile</a></li><li><hr class="dropdown-divider"></li>{% if current_user.is_moderator() %}<li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="fas fa-cog me-2"></i>Admin Panel</a></li><li><hr class="dropdown-divider"></li>{% endif %}<li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li></ul></li>
+                <ul class="navbar-nav">{% if current_user.is_authenticated %}<li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"><i class="fas fa-user-circle me-1"></i>{{ current_user.first_name or current_user.username }}</a><ul class="dropdown-menu dropdown-menu-end"><li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="fas fa-user me-2"></i>My Profile</a></li><li><hr class="dropdown-divider"></li><li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li></ul></li>
 {% else %}<li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt me-1"></i>Login</a></li><li class="nav-item"><a class="btn btn-recipe ms-2" href="{{ url_for('auth.register') }}"><i class="fas fa-user-plus me-1"></i>Register</a></li>{% endif %}</ul>
             </div>
         </div>
@@ -260,9 +260,9 @@
                 <div class="col-md-4">
                     <h6>Quick Links</h6>
                     <ul class="list-unstyled">
-                        <li><a href="{{ url_for('main.about') }}" class="text-light">About</a></li>
-                        <li><a href="{{ url_for('main.terms') }}" class="text-light">Terms of Service</a></li>
-                        <li><a href="{{ url_for('main.privacy') }}" class="text-light">Privacy Policy</a></li>
+                        <li><a href="{{ url_for('main.recipes') }}" class="text-light">Browse Recipes</a></li>
+                        <li><a href="{{ url_for('main.search') }}" class="text-light">Search</a></li>
+                        <li><a href="{{ url_for('main.nutrition_calculator') }}" class="text-light">Nutrition Calculator</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">

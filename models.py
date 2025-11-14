@@ -80,7 +80,32 @@ class User(UserMixin):
         if User.get_by_email(email):
             raise ValueError("Email already exists")
         
+        # Insert user with direct SQL
+        query = """
+            INSERT INTO users 
+            (username, email, password_hash, first_name, last_name, role, is_active, 
+             email_verified, profile_picture_url, bio, daily_calorie_goal, dietary_restrictions, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+        """
+        
+        user_id = db_client.execute_insert(query, (
+            username,
+            email.lower(),
+            generate_password_hash(password),
+            kwargs.get('first_name'),
+            kwargs.get('last_name'),
+            kwargs.get('role', 'user'),
+            kwargs.get('is_active', True),
+            kwargs.get('email_verified', False),
+            kwargs.get('profile_picture_url'),
+            kwargs.get('bio'),
+            kwargs.get('daily_calorie_goal'),
+            kwargs.get('dietary_restrictions')
+        ))
+        
+        # Create user data for return
         user_data = {
+            'id': user_id,
             'username': username,
             'email': email.lower(),
             'password_hash': generate_password_hash(password),
@@ -94,9 +119,6 @@ class User(UserMixin):
             'daily_calorie_goal': kwargs.get('daily_calorie_goal'),
             'dietary_restrictions': kwargs.get('dietary_restrictions')
         }
-        
-        user_id = db_client.insert_record('users', user_data)
-        user_data['id'] = user_id
         return User(**user_data)
     
     @staticmethod
@@ -147,9 +169,26 @@ class User(UserMixin):
         params = ()
         
         if filters:
-            where_clause, where_params = db_client.build_where_clause(filters)
-            base_query += where_clause
-            params = where_params
+            # Build WHERE clause manually for direct SQL
+            where_parts = []
+            filter_params = []
+            for key, value in filters.items():
+                if value is None:
+                    where_parts.append(f"{key} IS NULL")
+                elif isinstance(value, (list, tuple)):
+                    placeholders = ', '.join(['%s'] * len(value))
+                    where_parts.append(f"{key} IN ({placeholders})")
+                    filter_params.extend(value)
+                elif isinstance(value, bool):
+                    where_parts.append(f"{key} = %s")
+                    filter_params.append(1 if value else 0)
+                else:
+                    where_parts.append(f"{key} = %s")
+                    filter_params.append(value)
+            
+            if where_parts:
+                base_query += " WHERE " + " AND ".join(where_parts)
+                params = tuple(filter_params)
         
         base_query += " ORDER BY created_at DESC"
         
@@ -164,23 +203,21 @@ class User(UserMixin):
         
         db_client = get_db_client()
         
-        user_data = {
-            'username': self.username,
-            'email': self.email,
-            'password_hash': self.password_hash,
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-            'role': self.role,
-            'is_active': self.is_active,
-            'email_verified': self.email_verified,
-            'profile_picture_url': self.profile_picture_url,
-            'bio': self.bio,
-            'daily_calorie_goal': self.daily_calorie_goal,
-            'dietary_restrictions': self.dietary_restrictions,
-            'last_login': self.last_login
-        }
+        query = """
+            UPDATE users SET 
+                username = %s, email = %s, password_hash = %s, first_name = %s, last_name = %s,
+                role = %s, is_active = %s, email_verified = %s, profile_picture_url = %s, 
+                bio = %s, daily_calorie_goal = %s, dietary_restrictions = %s, last_login = %s,
+                updated_at = NOW()
+            WHERE id = %s
+        """
         
-        db_client.update_record('users', user_data, {'id': self.id})
+        db_client.execute_update(query, (
+            self.username, self.email, self.password_hash, self.first_name, self.last_name,
+            self.role, self.is_active, self.email_verified, self.profile_picture_url,
+            self.bio, self.daily_calorie_goal, self.dietary_restrictions, self.last_login,
+            self.id
+        ))
     
     def delete(self) -> None:
         """Delete user from database."""
@@ -188,7 +225,7 @@ class User(UserMixin):
             raise ValueError("Cannot delete user without ID")
         
         db_client = get_db_client()
-        db_client.delete_record('users', {'id': self.id})
+        db_client.execute_delete("DELETE FROM users WHERE id = %s", (self.id,))
     
     def set_password(self, password: str) -> None:
         """Hash and set user password."""
@@ -285,23 +322,14 @@ class ProductNutrition:
         query = """
             INSERT INTO product_nutrition 
             (product_id, calories, protein_g, carbohydrates_g, fiber_g, sugars_g,
-             fat_total_g, fat_saturated_g, sodium_mg)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+             fat_total_g, fat_saturated_g, sodium_mg, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
         """
         
-        nutrition_data = {
-            'product_id': product_id,
-            'calories': calories,
-            'protein_g': protein_g,
-            'carbohydrates_g': carbohydrates_g,
-            'fiber_g': fiber_g,
-            'sugars_g': sugars_g,
-            'fat_total_g': fat_total_g,
-            'fat_saturated_g': fat_saturated_g,
-            'sodium_mg': sodium_mg
-        }
-        
-        nutrition_id = client.insert_record('product_nutrition', nutrition_data)
+        nutrition_id = client.execute_insert(query, (
+            product_id, calories, protein_g, carbohydrates_g, fiber_g, sugars_g,
+            fat_total_g, fat_saturated_g, sodium_mg
+        ))
         if nutrition_id:
             return ProductNutrition.get_by_product_id(product_id)
         return None
@@ -380,7 +408,25 @@ class Product:
         if Product.get_by_barcode(barcode):
             raise ValueError("Product with this barcode already exists")
         
+        query = """
+            INSERT INTO products 
+            (barcode, name, brand, description, category, image_url, is_verified, 
+             verified_by_user_id, serving_size, serving_size_unit, servings_per_container, 
+             created_by_user_id, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+        """
+        
+        product_id = db_client.execute_insert(query, (
+            barcode, name, kwargs.get('brand'), kwargs.get('description'),
+            kwargs.get('category'), kwargs.get('image_url'), kwargs.get('is_verified', False),
+            kwargs.get('verified_by_user_id'), kwargs.get('serving_size'),
+            kwargs.get('serving_size_unit', 'g'), kwargs.get('servings_per_container'),
+            kwargs.get('created_by_user_id')
+        ))
+        
+        # Create product data for return
         product_data = {
+            'id': product_id,
             'barcode': barcode,
             'name': name,
             'brand': kwargs.get('brand'),
@@ -394,9 +440,6 @@ class Product:
             'servings_per_container': kwargs.get('servings_per_container'),
             'created_by_user_id': kwargs.get('created_by_user_id')
         }
-        
-        product_id = db_client.insert_record('products', product_data)
-        product_data['id'] = product_id
         return Product(**product_data)
     
     @staticmethod
@@ -456,10 +499,34 @@ class Product:
         
         if existing:
             # Update existing nutrition
-            db_client.update_record('product_nutrition', nutrition_data, {'product_id': self.id})
+            query = """
+                UPDATE product_nutrition SET 
+                    calories = %s, protein_g = %s, carbohydrates_g = %s, fiber_g = %s,
+                    sugars_g = %s, fat_total_g = %s, fat_saturated_g = %s, sodium_mg = %s,
+                    updated_at = NOW()
+                WHERE product_id = %s
+            """
+            db_client.execute_update(query, (
+                nutrition_data.get('calories'), nutrition_data.get('protein_g'),
+                nutrition_data.get('carbohydrates_g'), nutrition_data.get('fiber_g'),
+                nutrition_data.get('sugars_g'), nutrition_data.get('fat_total_g'),
+                nutrition_data.get('fat_saturated_g'), nutrition_data.get('sodium_mg'),
+                self.id
+            ))
         else:
             # Create new nutrition record
-            db_client.insert_record('product_nutrition', nutrition_data)
+            query = """
+                INSERT INTO product_nutrition 
+                (product_id, calories, protein_g, carbohydrates_g, fiber_g, sugars_g,
+                 fat_total_g, fat_saturated_g, sodium_mg, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            """
+            db_client.execute_insert(query, (
+                self.id, nutrition_data.get('calories'), nutrition_data.get('protein_g'),
+                nutrition_data.get('carbohydrates_g'), nutrition_data.get('fiber_g'),
+                nutrition_data.get('sugars_g'), nutrition_data.get('fat_total_g'),
+                nutrition_data.get('fat_saturated_g'), nutrition_data.get('sodium_mg')
+            ))
         
         # Clear cache
         self._nutrition = None
@@ -471,23 +538,21 @@ class Product:
         
         db_client = get_db_client()
         
-        product_data = {
-            'barcode': self.barcode,
-            'name': self.name,
-            'brand': self.brand,
-            'description': self.description,
-            'category': self.category,
-            'image_url': self.image_url,
-            'is_verified': self.is_verified,
-            'verified_by_user_id': self.verified_by_user_id,
-            'verification_date': self.verification_date,
-            'serving_size': self.serving_size,
-            'serving_size_unit': self.serving_size_unit,
-            'servings_per_container': self.servings_per_container,
-            'created_by_user_id': self.created_by_user_id
-        }
+        query = """
+            UPDATE products SET 
+                barcode = %s, name = %s, brand = %s, description = %s, category = %s,
+                image_url = %s, is_verified = %s, verified_by_user_id = %s, 
+                verification_date = %s, serving_size = %s, serving_size_unit = %s,
+                servings_per_container = %s, created_by_user_id = %s, updated_at = NOW()
+            WHERE id = %s
+        """
         
-        db_client.update_record('products', product_data, {'id': self.id})
+        db_client.execute_update(query, (
+            self.barcode, self.name, self.brand, self.description, self.category,
+            self.image_url, self.is_verified, self.verified_by_user_id,
+            self.verification_date, self.serving_size, self.serving_size_unit,
+            self.servings_per_container, self.created_by_user_id, self.id
+        ))
     
     def __repr__(self):
         return f'<Product {self.name} ({self.barcode})>'
@@ -544,7 +609,33 @@ class Recipe:
         """Create a new recipe in the database."""
         db_client = get_db_client()
         
+        import json
+        
+        # Convert dietary_tags to JSON string if it's a list/dict
+        dietary_tags = kwargs.get('dietary_tags')
+        if isinstance(dietary_tags, (list, dict)):
+            dietary_tags = json.dumps(dietary_tags)
+        
+        query = """
+            INSERT INTO recipes 
+            (name, description, ingredients, instructions, prep_time_minutes, cook_time_minutes, 
+             total_time_minutes, servings, difficulty_level, category, cuisine_type, dietary_tags,
+             image_url, video_url, is_public, is_featured, is_approved, created_by_user_id, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+        """
+        
+        recipe_id = db_client.execute_insert(query, (
+            name, kwargs.get('description'), kwargs.get('ingredients'), kwargs.get('instructions'),
+            kwargs.get('prep_time_minutes'), kwargs.get('cook_time_minutes'), kwargs.get('total_time_minutes'),
+            kwargs.get('servings', 1), kwargs.get('difficulty_level'), kwargs.get('category'),
+            kwargs.get('cuisine_type'), dietary_tags, kwargs.get('image_url'), kwargs.get('video_url'),
+            kwargs.get('is_public', True), kwargs.get('is_featured', False), kwargs.get('is_approved', True),
+            created_by_user_id
+        ))
+        
+        # Create recipe data for return
         recipe_data = {
+            'id': recipe_id,
             'name': name,
             'description': kwargs.get('description'),
             'ingredients': kwargs.get('ingredients'),
@@ -564,9 +655,6 @@ class Recipe:
             'is_approved': kwargs.get('is_approved', True),
             'created_by_user_id': created_by_user_id
         }
-        
-        recipe_id = db_client.insert_record('recipes', recipe_data)
-        recipe_data['id'] = recipe_id
         return Recipe(**recipe_data)
     
     @staticmethod
@@ -595,7 +683,28 @@ class Recipe:
             return False
         
         try:
-            result = db_client.update_record('recipes', filtered_data, {'id': recipe_id})
+            import json
+            
+            # Build SET clause dynamically based on filtered_data
+            set_parts = []
+            params = []
+            
+            for key, value in filtered_data.items():
+                set_parts.append(f"{key} = %s")
+                # Handle JSON fields
+                if isinstance(value, (list, dict)):
+                    params.append(json.dumps(value))
+                else:
+                    params.append(value)
+            
+            if not set_parts:
+                return False
+            
+            set_clause = ", ".join(set_parts)
+            params.append(recipe_id)  # Add recipe_id for WHERE clause
+            
+            query = f"UPDATE recipes SET {set_clause}, updated_at = NOW() WHERE id = %s"
+            result = db_client.execute_update(query, tuple(params))
             return result > 0  # Returns number of affected rows
         except Exception as e:
             print(f"Error updating recipe {recipe_id}: {e}")
@@ -607,7 +716,7 @@ class Recipe:
         db_client = get_db_client()
         
         try:
-            result = db_client.delete_record('recipes', {'id': recipe_id})
+            result = db_client.execute_delete("DELETE FROM recipes WHERE id = %s", (recipe_id,))
             return result > 0  # Returns number of affected rows
         except Exception as e:
             print(f"Error deleting recipe {recipe_id}: {e}")
@@ -622,9 +731,26 @@ class Recipe:
         params = ()
         
         if filters:
-            where_clause, where_params = db_client.build_where_clause(filters)
-            query += where_clause
-            params = where_params
+            # Build WHERE clause manually for direct SQL
+            where_parts = []
+            filter_params = []
+            for key, value in filters.items():
+                if value is None:
+                    where_parts.append(f"{key} IS NULL")
+                elif isinstance(value, (list, tuple)):
+                    placeholders = ', '.join(['%s'] * len(value))
+                    where_parts.append(f"{key} IN ({placeholders})")
+                    filter_params.extend(value)
+                elif isinstance(value, bool):
+                    where_parts.append(f"{key} = %s")
+                    filter_params.append(1 if value else 0)
+                else:
+                    where_parts.append(f"{key} = %s")
+                    filter_params.append(value)
+            
+            if where_parts:
+                query += " WHERE " + " AND ".join(where_parts)
+                params = tuple(filter_params)
         
         result = db_client.fetch_one(query, params)
         return result['count'] if result else 0
@@ -639,9 +765,26 @@ class Recipe:
         params = ()
         
         if filters:
-            where_clause, where_params = db_client.build_where_clause(filters)
-            base_query += where_clause
-            params = where_params
+            # Build WHERE clause manually for direct SQL
+            where_parts = []
+            filter_params = []
+            for key, value in filters.items():
+                if value is None:
+                    where_parts.append(f"{key} IS NULL")
+                elif isinstance(value, (list, tuple)):
+                    placeholders = ', '.join(['%s'] * len(value))
+                    where_parts.append(f"{key} IN ({placeholders})")
+                    filter_params.extend(value)
+                elif isinstance(value, bool):
+                    where_parts.append(f"{key} = %s")
+                    filter_params.append(1 if value else 0)
+                else:
+                    where_parts.append(f"{key} = %s")
+                    filter_params.append(value)
+            
+            if where_parts:
+                base_query += " WHERE " + " AND ".join(where_parts)
+                params = tuple(filter_params)
         
         base_query += f" ORDER BY {order_by}"
         
@@ -676,9 +819,24 @@ class Recipe:
         params = [search_term, search_term, search_term, search_term, search_term, query, search_term]
         
         if filters:
-            where_clause, where_params = db_client.build_where_clause(filters)
-            search_query += " AND " + where_clause[7:]  # Remove " WHERE "
-            params.extend(where_params)
+            # Build WHERE clause manually for direct SQL
+            where_parts = []
+            for key, value in filters.items():
+                if value is None:
+                    where_parts.append(f"{key} IS NULL")
+                elif isinstance(value, (list, tuple)):
+                    placeholders = ', '.join(['%s'] * len(value))
+                    where_parts.append(f"{key} IN ({placeholders})")
+                    params.extend(value)
+                elif isinstance(value, bool):
+                    where_parts.append(f"{key} = %s")
+                    params.append(1 if value else 0)
+                else:
+                    where_parts.append(f"{key} = %s")
+                    params.append(value)
+            
+            if where_parts:
+                search_query += " AND " + " AND ".join(where_parts)
         
         search_query += " ORDER BY r.is_featured DESC, r.created_at DESC LIMIT %s"
         params.append(limit)
@@ -785,25 +943,30 @@ class Recipe:
         
         db_client = get_db_client()
         
-        recipe_data = {
-            'name': self.name,
-            'description': self.description,
-            'prep_time_minutes': self.prep_time_minutes,
-            'cook_time_minutes': self.cook_time_minutes,
-            'total_time_minutes': self.total_time_minutes,
-            'servings': self.servings,
-            'difficulty_level': self.difficulty_level,
-            'category': self.category,
-            'cuisine_type': self.cuisine_type,
-            'dietary_tags': self.dietary_tags,
-            'image_url': self.image_url,
-            'video_url': self.video_url,
-            'is_public': self.is_public,
-            'is_featured': self.is_featured,
-            'is_approved': self.is_approved
-        }
+        import json
         
-        db_client.update_record('recipes', recipe_data, {'id': self.id})
+        # Handle dietary_tags JSON serialization
+        dietary_tags = self.dietary_tags
+        if isinstance(dietary_tags, (list, dict)):
+            dietary_tags = json.dumps(dietary_tags)
+        
+        query = """
+            UPDATE recipes SET 
+                name = %s, description = %s, ingredients = %s, instructions = %s,
+                prep_time_minutes = %s, cook_time_minutes = %s, total_time_minutes = %s,
+                servings = %s, difficulty_level = %s, category = %s, cuisine_type = %s,
+                dietary_tags = %s, image_url = %s, video_url = %s, is_public = %s,
+                is_featured = %s, is_approved = %s, updated_at = NOW()
+            WHERE id = %s
+        """
+        
+        db_client.execute_update(query, (
+            self.name, self.description, self.ingredients, self.instructions,
+            self.prep_time_minutes, self.cook_time_minutes, self.total_time_minutes,
+            self.servings, self.difficulty_level, self.category, self.cuisine_type,
+            dietary_tags, self.image_url, self.video_url, self.is_public,
+            self.is_featured, self.is_approved, self.id
+        ))
     
     def __repr__(self):
         return f'<Recipe {self.name}>'
@@ -831,7 +994,20 @@ class RecipeRating:
         """Create a new recipe rating."""
         db_client = get_db_client()
         
+        query = """
+            INSERT INTO recipe_ratings 
+            (recipe_id, user_id, rating, review_text, would_make_again, is_approved, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+        """
+        
+        rating_id = db_client.execute_insert(query, (
+            recipe_id, user_id, rating, kwargs.get('review_text'),
+            kwargs.get('would_make_again'), kwargs.get('is_approved', True)
+        ))
+        
+        # Create rating data for return
         rating_data = {
+            'id': rating_id,
             'recipe_id': recipe_id,
             'user_id': user_id,
             'rating': rating,
@@ -839,9 +1015,6 @@ class RecipeRating:
             'would_make_again': kwargs.get('would_make_again'),
             'is_approved': kwargs.get('is_approved', True)
         }
-        
-        rating_id = db_client.insert_record('recipe_ratings', rating_data)
-        rating_data['id'] = rating_id
         return RecipeRating(**rating_data)
     
     @staticmethod
@@ -870,14 +1043,23 @@ class UserSavedRecipe:
         """Create a new saved recipe."""
         db_client = get_db_client()
         
+        query = """
+            INSERT INTO user_saved_recipes 
+            (user_id, recipe_id, notes, created_at)
+            VALUES (%s, %s, %s, NOW())
+        """
+        
+        saved_id = db_client.execute_insert(query, (
+            user_id, recipe_id, kwargs.get('notes')
+        ))
+        
+        # Create saved data for return
         saved_data = {
+            'id': saved_id,
             'user_id': user_id,
             'recipe_id': recipe_id,
             'notes': kwargs.get('notes')
         }
-        
-        saved_id = db_client.insert_record('user_saved_recipes', saved_data)
-        saved_data['id'] = saved_id
         return UserSavedRecipe(**saved_data)
     
     @staticmethod
@@ -899,10 +1081,10 @@ class UserSavedRecipe:
     def delete(user_id: int, recipe_id: int) -> bool:
         """Delete saved recipe by user and recipe IDs."""
         db_client = get_db_client()
-        result = db_client.delete_record('user_saved_recipes', {
-            'user_id': user_id,
-            'recipe_id': recipe_id
-        })
+        result = db_client.execute_delete(
+            "DELETE FROM user_saved_recipes WHERE user_id = %s AND recipe_id = %s",
+            (user_id, recipe_id)
+        )
         return result > 0
     
     def delete(self) -> None:
@@ -911,7 +1093,7 @@ class UserSavedRecipe:
             raise ValueError("Cannot delete saved recipe without ID")
         
         db_client = get_db_client()
-        db_client.delete_record('user_saved_recipes', {'id': self.id})
+        db_client.execute_delete("DELETE FROM user_saved_recipes WHERE id = %s", (self.id,))
 
 
 class UserProductHistory:
@@ -931,99 +1113,40 @@ class UserProductHistory:
         """Create a new product history entry."""
         db_client = get_db_client()
         
+        query = """
+            INSERT INTO user_product_history 
+            (user_id, product_id, action_type, quantity_consumed, serving_size_consumed, timestamp)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+        """
+        
+        history_id = db_client.execute_insert(query, (
+            user_id, product_id, action_type, kwargs.get('quantity_consumed'),
+            kwargs.get('serving_size_consumed')
+        ))
+        
+        # Create history data for return
         history_data = {
+            'id': history_id,
             'user_id': user_id,
             'product_id': product_id,
             'action_type': action_type,
             'quantity_consumed': kwargs.get('quantity_consumed'),
             'serving_size_consumed': kwargs.get('serving_size_consumed')
         }
-        
-        history_id = db_client.insert_record('user_product_history', history_data)
-        history_data['id'] = history_id
         return UserProductHistory(**history_data)
 
 
 # Helper functions for database initialization
 
-def init_database():
-    """Initialize database with schema."""
-    db_client = get_db_client()
-    
-    # Read and execute schema
-    try:
-        with open('schema.sql', 'r') as f:
-            schema_sql = f.read()
-        
-        db_client.execute_script(schema_sql)
-        logging.info("Database schema initialized successfully")
-        
-    except Exception as e:
-        logging.error(f"Failed to initialize database schema: {e}")
-        raise
+# Database initialization functions removed - not used in application
+# init_database(), create_tables() functions removed
 
+# Stub model classes removed - these were incomplete implementations:
+# - ReportedContent class removed
+# - AdminAction class removed  
+# - SponsoredContent class removed
 
-def create_tables():
-    """Create all database tables."""
-    init_database()
-
-
-# Additional models for admin functionality (stub implementations)
-class ReportedContent:
-    """Model for user-reported content for moderation."""
-    
-    def __init__(self, **kwargs):
-        self.id = kwargs.get('id')
-        self.user_id = kwargs.get('user_id')
-        self.content_type = kwargs.get('content_type')
-        self.content_id = kwargs.get('content_id')
-        self.reason = kwargs.get('reason')
-        self.status = kwargs.get('status', 'pending')
-        self.created_at = kwargs.get('created_at')
-    
-    @staticmethod
-    def count(filters=None):
-        """Count reported content records."""
-        return 0  # Stub implementation
-    
-    @staticmethod
-    def get_by_status(status, limit=None, order_by=None):
-        """Get reports by status."""
-        return []  # Stub implementation
-
-
-class AdminAction:
-    """Model for admin action logging."""
-    
-    def __init__(self, **kwargs):
-        self.id = kwargs.get('id')
-        self.admin_user_id = kwargs.get('admin_user_id')
-        self.action_type = kwargs.get('action_type')
-        self.target_type = kwargs.get('target_type')
-        self.target_id = kwargs.get('target_id')
-        self.description = kwargs.get('description')
-        self.created_at = kwargs.get('created_at')
-    
-    @staticmethod
-    def create(**kwargs):
-        """Create admin action record."""
-        return None  # Stub implementation
-
-
-class SponsoredContent:
-    """Model for sponsored and featured content."""
-    
-    def __init__(self, **kwargs):
-        self.id = kwargs.get('id')
-        self.recipe_id = kwargs.get('recipe_id')
-        self.content_type = kwargs.get('content_type')
-        self.sponsor_name = kwargs.get('sponsor_name')
-        self.campaign_name = kwargs.get('campaign_name')
-        self.priority_score = kwargs.get('priority_score', 1)
-        self.created_at = kwargs.get('created_at')
-
-
-# Enum classes for consistency
+# Enum classes kept for existing code compatibility
 class UserRole:
     """User role enumeration."""
     USER = 'user'

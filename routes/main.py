@@ -271,26 +271,24 @@ def add_recipe():
                     from db_client import get_db_client
                     db_client = get_db_client()
                     
-                    nutrition_data = {
-                        'recipe_id': recipe.id,
-                        'is_calculated': False
-                    }
-                    if calories_per_serving:
-                        nutrition_data['calories_per_serving'] = float(calories_per_serving)
-                    if protein_g:
-                        nutrition_data['protein_g'] = float(protein_g)
-                    if carbohydrates_g:
-                        nutrition_data['carbohydrates_g'] = float(carbohydrates_g)
-                    if fat_total_g:
-                        nutrition_data['fat_total_g'] = float(fat_total_g)
-                    if fiber_g:
-                        nutrition_data['fiber_g'] = float(fiber_g)
-                    if sugars_g:
-                        nutrition_data['sugars_g'] = float(sugars_g)
-                    if sodium_mg:
-                        nutrition_data['sodium_mg'] = float(sodium_mg)
+                    query = """
+                        INSERT INTO recipe_nutrition 
+                        (recipe_id, calories_per_serving, protein_g, carbohydrates_g, fat_total_g,
+                         fiber_g, sugars_g, sodium_mg, is_calculated, created_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                    """
                     
-                    db_client.insert_record('recipe_nutrition', nutrition_data)
+                    db_client.execute_insert(query, (
+                        recipe.id,
+                        float(calories_per_serving) if calories_per_serving else None,
+                        float(protein_g) if protein_g else None,
+                        float(carbohydrates_g) if carbohydrates_g else None,
+                        float(fat_total_g) if fat_total_g else None,
+                        float(fiber_g) if fiber_g else None,
+                        float(sugars_g) if sugars_g else None,
+                        float(sodium_mg) if sodium_mg else None,
+                        False
+                    ))
                 
                 flash('Recipe created successfully!', 'success')
                 return redirect(url_for('main.view_recipe', recipe_id=recipe.id))
@@ -387,12 +385,37 @@ def edit_recipe(recipe_id):
                 if nutrition_data:
                     if existing_nutrition:
                         # Update existing nutrition
-                        db_client.update_record('recipe_nutrition', nutrition_data, {'recipe_id': recipe_id})
+                        set_parts = []
+                        params = []
+                        for key, value in nutrition_data.items():
+                            set_parts.append(f"{key} = %s")
+                            params.append(value)
+                        
+                        if set_parts:
+                            set_clause = ", ".join(set_parts)
+                            params.append(recipe_id)
+                            update_query = f"UPDATE recipe_nutrition SET {set_clause}, updated_at = NOW() WHERE recipe_id = %s"
+                            db_client.execute_update(update_query, tuple(params))
                     else:
                         # Create new nutrition record
-                        nutrition_data['recipe_id'] = recipe_id
-                        nutrition_data['is_calculated'] = False
-                        db_client.insert_record('recipe_nutrition', nutrition_data)
+                        insert_query = """
+                            INSERT INTO recipe_nutrition 
+                            (recipe_id, calories_per_serving, protein_g, carbohydrates_g, fat_total_g,
+                             fiber_g, sugars_g, sodium_mg, is_calculated, created_at)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                        """
+                        
+                        db_client.execute_insert(insert_query, (
+                            recipe_id,
+                            nutrition_data.get('calories_per_serving'),
+                            nutrition_data.get('protein_g'),
+                            nutrition_data.get('carbohydrates_g'),
+                            nutrition_data.get('fat_total_g'),
+                            nutrition_data.get('fiber_g'),
+                            nutrition_data.get('sugars_g'),
+                            nutrition_data.get('sodium_mg'),
+                            False
+                        ))
                 elif existing_nutrition:
                     # If no nutrition data provided but exists, we could delete it
                     # For now, we'll leave it as is
@@ -452,7 +475,7 @@ def nutrition_calculator():
 def my_ingredients():
     """User's personal ingredient list."""
     personal_ingredients = current_user.personal_ingredients
-    return render_template('main/personal_ingredients.html', 
+    return render_template('personal_ingredients.html', 
                          ingredients=personal_ingredients)
 
 @main_bp.route('/search')
@@ -505,17 +528,5 @@ def search():
     
     return render_template('search_results.html', **results)
 
-@main_bp.route('/about')
-def about():
-    """About page with app information."""
-    return render_template('main/about.html')
-
-@main_bp.route('/terms')
-def terms():
-    """Terms of service page."""
-    return render_template('main/terms.html')
-
-@main_bp.route('/privacy')
-def privacy():
-    """Privacy policy page."""
-    return render_template('main/privacy.html')
+# Template routes removed - templates do not exist
+# about(), terms(), privacy() functions removed

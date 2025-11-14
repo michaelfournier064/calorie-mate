@@ -142,11 +142,6 @@
                         <a href="{{ url_for('main.my_ingredients') }}" class="btn btn-outline-info">
                             <i class="fas fa-list me-1"></i>My Ingredients
                         </a>
-                        {% if user.is_moderator() %}
-                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-warning">
-                            <i class="fas fa-cog me-1"></i>Admin Panel
-                        </a>
-                        {% endif %}
                     </div>
                 </div>
             </div>

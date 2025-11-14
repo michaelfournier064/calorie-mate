@@ -44,14 +44,12 @@ def create_app():
     from routes.auth import auth_bp
     from routes.main import main_bp
     from routes.api import api_bp
-    from routes.admin import admin_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(main_bp)
     # Exempt API blueprint from CSRF (all routes require login)
     csrf.exempt(api_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
-    app.register_blueprint(admin_bp, url_prefix='/admin')
     
     return app
 
