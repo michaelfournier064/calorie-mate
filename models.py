@@ -315,20 +315,26 @@ class ProductNutrition:
     @staticmethod
     def create(product_id, calories=None, protein_g=None, carbohydrates_g=None,
                fiber_g=None, sugars_g=None, fat_total_g=None, fat_saturated_g=None,
-               sodium_mg=None):
+               fat_trans_g=None, sodium_mg=None, cholesterol_mg=None, potassium_mg=None,
+               vitamin_a_percent=None, vitamin_c_percent=None, calcium_percent=None,
+               iron_percent=None):
         """Create new product nutrition record."""
         client = get_db_client()
         
         query = """
             INSERT INTO product_nutrition 
             (product_id, calories, protein_g, carbohydrates_g, fiber_g, sugars_g,
-             fat_total_g, fat_saturated_g, sodium_mg, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+             fat_total_g, fat_saturated_g, fat_trans_g, sodium_mg, cholesterol_mg,
+             potassium_mg, vitamin_a_percent, vitamin_c_percent, calcium_percent,
+             iron_percent, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
         """
         
         nutrition_id = client.execute_insert(query, (
             product_id, calories, protein_g, carbohydrates_g, fiber_g, sugars_g,
-            fat_total_g, fat_saturated_g, sodium_mg
+            fat_total_g, fat_saturated_g, fat_trans_g, sodium_mg, cholesterol_mg,
+            potassium_mg, vitamin_a_percent, vitamin_c_percent, calcium_percent,
+            iron_percent
         ))
         if nutrition_id:
             return ProductNutrition.get_by_product_id(product_id)

@@ -31,11 +31,16 @@
                         </button>
                     </div>
                     
-                    <!-- Tabs for Barcode/Ingredient Entry -->
+                    <!-- Tabs for Barcode/Ingredient/Product Entry -->
                     <ul class="nav nav-tabs mb-3" id="entryTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="barcode-tab" data-bs-toggle="tab" data-bs-target="#barcode-pane" type="button" role="tab">
                                 <i class="fas fa-barcode me-1"></i>Barcode Lookup
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="product-tab" data-bs-toggle="tab" data-bs-target="#product-pane" type="button" role="tab">
+                                <i class="fas fa-box me-1"></i>Add Product
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -57,6 +62,168 @@
                                     <i class="fas fa-search me-1"></i>Lookup
                                 </button>
                             </div>
+                        </div>
+                        
+                        <!-- Manual Product Entry Tab -->
+                        <div class="tab-pane fade" id="product-pane" role="tabpanel">
+                            <h5><i class="fas fa-plus-circle me-2"></i>Add Product Manually</h5>
+                            <form id="manual-product-form">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="manual-product-name" class="form-label">Product Name *</label>
+                                        <input type="text" class="form-control" id="manual-product-name" name="name" required placeholder="e.g., Organic Whole Milk">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="manual-product-brand" class="form-label">Brand (Optional)</label>
+                                        <input type="text" class="form-control" id="manual-product-brand" name="brand" placeholder="e.g., Brand Name">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="manual-product-barcode" class="form-label">Barcode (Optional)</label>
+                                        <input type="text" class="form-control" id="manual-product-barcode" name="barcode" placeholder="Leave empty if no barcode">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="manual-product-category" class="form-label">Category</label>
+                                        <select class="form-select" id="manual-product-category" name="category">
+                                            <option value="">Select Category</option>
+                                            <option value="Beverages">Beverages</option>
+                                            <option value="Dairy">Dairy</option>
+                                            <option value="Snacks">Snacks</option>
+                                            <option value="Frozen Foods">Frozen Foods</option>
+                                            <option value="Pantry">Pantry</option>
+                                            <option value="Fresh Produce">Fresh Produce</option>
+                                            <option value="Meat & Seafood">Meat & Seafood</option>
+                                            <option value="Bakery">Bakery</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="manual-product-description" class="form-label">Description (Optional)</label>
+                                    <textarea class="form-control" id="manual-product-description" name="description" rows="2" placeholder="Brief description..."></textarea>
+                                </div>
+                                
+                                <!-- Serving Information -->
+                                <div class="card bg-light mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fas fa-ruler me-2"></i>Serving Information</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-serving-size" class="form-label">Serving Size</label>
+                                                <input type="number" class="form-control" id="manual-product-serving-size" name="serving_size" step="0.01" min="0" placeholder="e.g., 240">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-serving-unit" class="form-label">Serving Size Unit</label>
+                                                <select class="form-select" id="manual-product-serving-unit" name="serving_size_unit">
+                                                    <option value="g">g (grams)</option>
+                                                    <option value="ml">ml (milliliters)</option>
+                                                    <option value="oz">oz (ounces)</option>
+                                                    <option value="cup">cup</option>
+                                                    <option value="tbsp">tbsp (tablespoon)</option>
+                                                    <option value="tsp">tsp (teaspoon)</option>
+                                                    <option value="piece">piece</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-servings-per-container" class="form-label">Servings per Container</label>
+                                                <input type="number" class="form-control" id="manual-product-servings-per-container" name="servings_per_container" step="0.01" min="0" placeholder="e.g., 4">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Nutrition Information -->
+                                <div class="card bg-light mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Nutrition per Serving (Optional)</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="mb-3">Macronutrients</h6>
+                                        <div class="row">
+                                            <div class="col-md-3 mb-3">
+                                                <label for="manual-product-calories" class="form-label">Calories</label>
+                                                <input type="number" class="form-control" id="manual-product-calories" name="calories" step="0.01" min="0" placeholder="e.g., 150">
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label for="manual-product-protein" class="form-label">Protein (g)</label>
+                                                <input type="number" class="form-control" id="manual-product-protein" name="protein_g" step="0.01" min="0" placeholder="e.g., 8">
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label for="manual-product-carbs" class="form-label">Carbs (g)</label>
+                                                <input type="number" class="form-control" id="manual-product-carbs" name="carbohydrates_g" step="0.01" min="0" placeholder="e.g., 12">
+                                            </div>
+                                            <div class="col-md-3 mb-3">
+                                                <label for="manual-product-fat" class="form-label">Total Fat (g)</label>
+                                                <input type="number" class="form-control" id="manual-product-fat" name="fat_total_g" step="0.01" min="0" placeholder="e.g., 8">
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-fiber" class="form-label">Fiber (g)</label>
+                                                <input type="number" class="form-control" id="manual-product-fiber" name="fiber_g" step="0.01" min="0" placeholder="e.g., 0">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-sugars" class="form-label">Sugars (g)</label>
+                                                <input type="number" class="form-control" id="manual-product-sugars" name="sugars_g" step="0.01" min="0" placeholder="e.g., 12">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-saturated-fat" class="form-label">Saturated Fat (g)</label>
+                                                <input type="number" class="form-control" id="manual-product-saturated-fat" name="fat_saturated_g" step="0.01" min="0" placeholder="e.g., 5">
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-trans-fat" class="form-label">Trans Fat (g)</label>
+                                                <input type="number" class="form-control" id="manual-product-trans-fat" name="fat_trans_g" step="0.01" min="0" placeholder="e.g., 0">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-sodium" class="form-label">Sodium (mg)</label>
+                                                <input type="number" class="form-control" id="manual-product-sodium" name="sodium_mg" step="0.01" min="0" placeholder="e.g., 120">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-cholesterol" class="form-label">Cholesterol (mg)</label>
+                                                <input type="number" class="form-control" id="manual-product-cholesterol" name="cholesterol_mg" step="0.01" min="0" placeholder="e.g., 30">
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-potassium" class="form-label">Potassium (mg)</label>
+                                                <input type="number" class="form-control" id="manual-product-potassium" name="potassium_mg" step="0.01" min="0" placeholder="e.g., 370">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-vitamin-a" class="form-label">Vitamin A (% DV)</label>
+                                                <input type="number" class="form-control" id="manual-product-vitamin-a" name="vitamin_a_percent" step="0.01" min="0" placeholder="e.g., 10">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-vitamin-c" class="form-label">Vitamin C (% DV)</label>
+                                                <input type="number" class="form-control" id="manual-product-vitamin-c" name="vitamin_c_percent" step="0.01" min="0" placeholder="e.g., 0">
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-calcium" class="form-label">Calcium (% DV)</label>
+                                                <input type="number" class="form-control" id="manual-product-calcium" name="calcium_percent" step="0.01" min="0" placeholder="e.g., 30">
+                                            </div>
+                                            <div class="col-md-4 mb-3">
+                                                <label for="manual-product-iron" class="form-label">Iron (% DV)</label>
+                                                <input type="number" class="form-control" id="manual-product-iron" name="iron_percent" step="0.01" min="0" placeholder="e.g., 0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('manual-product-form').reset()">
+                                        <i class="fas fa-redo me-1"></i>Clear
+                                    </button>
+                                    <button type="submit" class="btn btn-recipe">
+                                        <i class="fas fa-save me-1"></i>Add Product
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                         
                         <!-- Manual Ingredient Entry Tab -->
@@ -529,6 +696,126 @@ function calculateNutrition(productId) {
     // Navigate to nutrition calculator with this product
     window.location.href = `/nutrition-calculator?product_id=${productId}`;
 }
+
+// Manual Product Form Submission
+$('#manual-product-form').submit(function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {};
+    
+    // Process form data and handle empty values
+    for (let [key, value] of formData.entries()) {
+        // Convert empty strings to null for optional fields (except name which is required)
+        if (key !== 'name' && (!value || value.trim() === '')) {
+            data[key] = null;
+        } else if (key === 'barcode' && (!value || value.trim() === '')) {
+            // Generate a unique barcode if none provided
+            data[key] = 'MANUAL_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        } else {
+            // Parse numeric fields
+            if (['serving_size', 'servings_per_container', 'calories', 'protein_g', 'carbohydrates_g', 
+                 'fat_total_g', 'fiber_g', 'sugars_g', 'fat_saturated_g', 'fat_trans_g', 
+                 'sodium_mg', 'cholesterol_mg', 'potassium_mg', 'vitamin_a_percent', 
+                 'vitamin_c_percent', 'calcium_percent', 'iron_percent'].includes(key)) {
+                data[key] = value ? parseFloat(value) : null;
+            } else {
+                data[key] = value;
+            }
+        }
+    }
+    
+    // Validate required field
+    if (!data.name || data.name.trim() === '') {
+        alert('Product name is required');
+        return;
+    }
+    
+    // Set default serving_size_unit if not provided
+    if (!data.serving_size_unit) {
+        data.serving_size_unit = 'g';
+    }
+    
+    // Show loading state
+    const submitBtn = $(this).find('button[type="submit"]');
+    const originalText = submitBtn.html();
+    submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Adding...');
+    
+    // Build nutrition object
+    const nutrition = {
+        calories: data.calories || null,
+        protein_g: data.protein_g || null,
+        carbohydrates_g: data.carbohydrates_g || null,
+        fiber_g: data.fiber_g || null,
+        sugars_g: data.sugars_g || null,
+        fat_total_g: data.fat_total_g || null,
+        fat_saturated_g: data.fat_saturated_g || null,
+        fat_trans_g: data.fat_trans_g || null,
+        sodium_mg: data.sodium_mg || null,
+        cholesterol_mg: data.cholesterol_mg || null,
+        potassium_mg: data.potassium_mg || null,
+        vitamin_a_percent: data.vitamin_a_percent || null,
+        vitamin_c_percent: data.vitamin_c_percent || null,
+        calcium_percent: data.calcium_percent || null,
+        iron_percent: data.iron_percent || null
+    };
+    
+    // Remove nutrition fields from main data object
+    delete data.calories;
+    delete data.protein_g;
+    delete data.carbohydrates_g;
+    delete data.fiber_g;
+    delete data.sugars_g;
+    delete data.fat_total_g;
+    delete data.fat_saturated_g;
+    delete data.fat_trans_g;
+    delete data.sodium_mg;
+    delete data.cholesterol_mg;
+    delete data.potassium_mg;
+    delete data.vitamin_a_percent;
+    delete data.vitamin_c_percent;
+    delete data.calcium_percent;
+    delete data.iron_percent;
+    
+    // Add nutrition object
+    data.nutrition = nutrition;
+    
+    $.ajax({
+        url: '/api/product',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                alert('Product added successfully! You can find it by searching or scanning its barcode.');
+                $('#manual-product-form')[0].reset();
+                // Optionally switch back to barcode tab
+                $('#barcode-tab').tab('show');
+            } else {
+                alert('Error adding product: ' + (response.message || 'Unknown error'));
+            }
+        },
+        error: function(xhr) {
+            let errorMsg = 'Failed to add product';
+            if (xhr.responseJSON) {
+                errorMsg = xhr.responseJSON.message || xhr.responseJSON.error || errorMsg;
+            } else if (xhr.status === 401) {
+                errorMsg = 'Please log in to add products';
+            } else if (xhr.status === 400) {
+                errorMsg = 'Invalid data. Please check your input.';
+            } else if (xhr.status === 409) {
+                errorMsg = 'A product with this barcode already exists. Please use a different barcode or leave it empty.';
+            }
+            console.error('Error details:', xhr);
+            alert('Error: ' + errorMsg);
+        },
+        complete: function() {
+            submitBtn.prop('disabled', false).html(originalText);
+        }
+    });
+});
 
 // Manual Ingredient Form Submission
 $('#manual-ingredient-form').submit(function(e) {

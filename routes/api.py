@@ -8,6 +8,8 @@ from models import Product, ProductNutrition, UserProductHistory, Recipe, UserSa
 from db_client import get_db_client
 import requests
 import json
+import time
+import random
 
 api_bp = Blueprint('api', __name__)
 
@@ -111,25 +113,31 @@ def add_product():
         data = request.get_json()
         
         # Validation
-        required_fields = ['barcode', 'name']
+        required_fields = ['name']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'error': f'Missing required field: {field}'}), 400
         
+        # Generate barcode if not provided
+        barcode = data.get('barcode')
+        if not barcode or barcode.strip() == '':
+            barcode = f'MANUAL_{current_user.id}_{int(time.time())}_{random.randint(1000, 9999)}'
+        
         # Check if barcode already exists
-        existing = Product.get_by_barcode(data['barcode'])
+        existing = Product.get_by_barcode(barcode)
         if existing:
             return jsonify({'error': 'Product with this barcode already exists'}), 409
         
         # Create product
         product = Product.create(
-            barcode=data['barcode'],
+            barcode=barcode,
             name=data['name'],
             brand=data.get('brand'),
             description=data.get('description'),
             category=data.get('category'),
             serving_size=data.get('serving_size'),
             serving_size_unit=data.get('serving_size_unit', 'g'),
+            servings_per_container=data.get('servings_per_container'),
             created_by_user_id=current_user.id
         )
         
@@ -138,7 +146,7 @@ def add_product():
         
         # Add nutrition if provided
         nutrition_data = data.get('nutrition', {})
-        if any(nutrition_data.values()):
+        if any(v is not None and v != '' for v in nutrition_data.values()):
             ProductNutrition.create(
                 product_id=product.id,
                 calories=nutrition_data.get('calories'),
@@ -148,7 +156,14 @@ def add_product():
                 sugars_g=nutrition_data.get('sugars_g'),
                 fat_total_g=nutrition_data.get('fat_total_g'),
                 fat_saturated_g=nutrition_data.get('fat_saturated_g'),
-                sodium_mg=nutrition_data.get('sodium_mg')
+                fat_trans_g=nutrition_data.get('fat_trans_g'),
+                sodium_mg=nutrition_data.get('sodium_mg'),
+                cholesterol_mg=nutrition_data.get('cholesterol_mg'),
+                potassium_mg=nutrition_data.get('potassium_mg'),
+                vitamin_a_percent=nutrition_data.get('vitamin_a_percent'),
+                vitamin_c_percent=nutrition_data.get('vitamin_c_percent'),
+                calcium_percent=nutrition_data.get('calcium_percent'),
+                iron_percent=nutrition_data.get('iron_percent')
             )
         
         return jsonify({
