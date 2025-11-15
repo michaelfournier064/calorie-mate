@@ -780,7 +780,15 @@ $('#manual-product-form').submit(function(e) {
         error: function(xhr) {
             let errorMsg = 'Failed to add product';
             if (xhr.responseJSON) {
-                errorMsg = xhr.responseJSON.message || xhr.responseJSON.error || errorMsg;
+                const responseData = xhr.responseJSON;
+                errorMsg = responseData.message || responseData.error || errorMsg;
+                
+                // If product already exists, provide more helpful message
+                if (xhr.status === 409 && responseData.existing_product_id) {
+                    errorMsg = `A product with this barcode already exists: "${responseData.existing_product_name}". ` +
+                              `Product ID: ${responseData.existing_product_id}. ` +
+                              `Please use a different barcode or leave it empty to generate a unique one.`;
+                }
             } else if (xhr.status === 401) {
                 errorMsg = 'Please log in to add products';
             } else if (xhr.status === 400) {
@@ -791,7 +799,7 @@ $('#manual-product-form').submit(function(e) {
             console.error('Error details:', xhr);
             console.error('Response:', xhr.responseText);
             console.error('Request data:', JSON.stringify(data, null, 2));
-            alert('Error: ' + errorMsg + '\n\nCheck the browser console for more details.');
+            alert('Error: ' + errorMsg);
         },
         complete: function() {
             submitBtn.prop('disabled', false).html(originalText);

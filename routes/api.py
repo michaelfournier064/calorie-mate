@@ -123,10 +123,17 @@ def add_product():
         if not barcode:
             barcode = f'MANUAL_{current_user.id}_{int(time.time())}_{random.randint(1000, 9999)}'
         
-        # Check if barcode already exists
+        # Check if product with this barcode already exists
         existing = Product.get_by_barcode(barcode)
         if existing:
-            return jsonify({'error': 'Product with this barcode already exists'}), 409
+            # Product already exists, return existing product info
+            return jsonify({
+                'success': False,
+                'error': 'Product with this barcode already exists',
+                'existing_product_id': existing.id,
+                'existing_product_name': existing.name,
+                'message': f'A product with barcode "{barcode}" already exists in the database.'
+            }), 409
         
         # Create product
         product = Product.create(
@@ -436,6 +443,37 @@ def get_product_by_id(product_id):
     except Exception as e:
         current_app.logger.error(f"Get product error: {e}")
         return jsonify({'error': 'Failed to get product'}), 500
+
+@api_bp.route('/product/delete/<int:product_id>', methods=['POST'])
+@login_required
+def delete_product(product_id):
+    """Delete a product (AJAX endpoint)."""
+    try:
+        product = Product.get(product_id)
+        if not product:
+            return jsonify({'error': 'Product not found'}), 404
+        
+        # Check if user can delete this product
+        if product.created_by_user_id != current_user.id and not current_user.is_moderator():
+            return jsonify({'error': 'You can only delete your own products'}), 403
+        
+        # Delete the product
+        success = Product.delete(product_id)
+        if success:
+            return jsonify({'success': True, 'message': 'Product deleted successfully'})
+        else:
+            # Get more specific error information
+            current_app.logger.error(f"Failed to delete product {product_id}")
+            return jsonify({'error': 'Failed to delete product. Please check server logs for details.'}), 500
+    
+    except Exception as e:
+        error_msg = str(e)
+        current_app.logger.error(f"Error deleting product {product_id}: {error_msg}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        print(f"Error deleting product: {e}")
+        traceback.print_exc()
+        return jsonify({'error': f'An error occurred while deleting the product: {error_msg}'}), 500
 
 @api_bp.route('/recipes')
 @login_required  

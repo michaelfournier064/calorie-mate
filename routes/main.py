@@ -2,7 +2,7 @@
 Main application routes for homepage, dashboard, and general functionality.
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from models import User, Recipe, Product, UserProductHistory, RecipeRating, UserSavedRecipe
 from db_client import get_db_client
@@ -154,6 +154,29 @@ def recipes():
                              current_search='',
                              current_category='',
                              current_page=1)
+
+@main_bp.route('/product/<int:product_id>')
+def view_product(product_id):
+    """View detailed product page."""
+    try:
+        product = Product.get(product_id)
+        if not product:
+            flash('Product not found.', 'error')
+            return redirect(url_for('main.barcode_scanner'))
+        
+        # Get nutrition data
+        from models import ProductNutrition
+        nutrition = ProductNutrition.get_by_product_id(product.id)
+        
+        return render_template('view_product.html',
+                             product=product,
+                             nutrition=nutrition)
+    except Exception as e:
+        print(f"View product error: {e}")
+        import traceback
+        traceback.print_exc()
+        flash('Error loading product.', 'error')
+        return redirect(url_for('main.barcode_scanner'))
 
 @main_bp.route('/recipe/<int:recipe_id>')
 def view_recipe(recipe_id):
@@ -539,6 +562,7 @@ def delete_recipe(recipe_id):
     except Exception as e:
         print(f"Error deleting recipe: {e}")
         return jsonify({'error': 'An error occurred while deleting the recipe'}), 500
+
 
 @main_bp.route('/barcode-scanner')
 @login_required

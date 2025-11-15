@@ -298,7 +298,9 @@ class ProductNutrition:
     
     def __init__(self, id=None, product_id=None, calories=None, protein_g=None,
                  carbohydrates_g=None, fiber_g=None, sugars_g=None, fat_total_g=None,
-                 fat_saturated_g=None, sodium_mg=None, created_at=None, updated_at=None):
+                 fat_saturated_g=None, fat_trans_g=None, sodium_mg=None, cholesterol_mg=None,
+                 potassium_mg=None, vitamin_a_percent=None, vitamin_c_percent=None,
+                 calcium_percent=None, iron_percent=None, created_at=None, updated_at=None, **kwargs):
         self.id = id
         self.product_id = product_id
         self.calories = calories
@@ -308,7 +310,14 @@ class ProductNutrition:
         self.sugars_g = sugars_g
         self.fat_total_g = fat_total_g
         self.fat_saturated_g = fat_saturated_g
+        self.fat_trans_g = fat_trans_g
         self.sodium_mg = sodium_mg
+        self.cholesterol_mg = cholesterol_mg
+        self.potassium_mg = potassium_mg
+        self.vitamin_a_percent = vitamin_a_percent
+        self.vitamin_c_percent = vitamin_c_percent
+        self.calcium_percent = calcium_percent
+        self.iron_percent = iron_percent
         self.created_at = created_at
         self.updated_at = updated_at
     
@@ -349,13 +358,9 @@ class ProductNutrition:
         result = client.execute_query(query, (product_id,))
         
         if result and len(result) > 0:
+            # execute_query returns list of dictionaries
             row = result[0]
-            return ProductNutrition(
-                id=row[0], product_id=row[1], calories=row[2], protein_g=row[3],
-                carbohydrates_g=row[4], fiber_g=row[5], sugars_g=row[6],
-                fat_total_g=row[7], fat_saturated_g=row[8], sodium_mg=row[9],
-                created_at=row[10], updated_at=row[11]
-            )
+            return ProductNutrition(**row)
         return None
     
     def save(self):
@@ -490,6 +495,24 @@ class Product:
             result = db_client.fetch_one("SELECT * FROM product_nutrition WHERE product_id = %s", (self.id,))
             self._nutrition = result
         return self._nutrition
+    
+    @staticmethod
+    def delete(product_id: int) -> bool:
+        """Delete a product from the database."""
+        db_client = get_db_client()
+        
+        try:
+            # Delete nutrition data first (due to foreign key constraint)
+            # Note: user_product_history has ON DELETE CASCADE, so it will be deleted automatically
+            db_client.execute_delete("DELETE FROM product_nutrition WHERE product_id = %s", (product_id,))
+            # Delete the product
+            result = db_client.execute_delete("DELETE FROM products WHERE id = %s", (product_id,))
+            return result > 0  # Returns number of affected rows
+        except Exception as e:
+            print(f"Error deleting product {product_id}: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
     
     def set_nutrition(self, nutrition_data: Dict[str, Any]) -> None:
         """Set nutrition information for this product."""

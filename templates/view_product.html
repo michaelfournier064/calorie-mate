@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - CalorieMate{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="mb-0"><i class="fas fa-box me-2"></i>{{ product.name }}</h2>
+                <div class="d-flex gap-2">
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.nutrition_calculator') }}?product_id={{ product.id }}" class="btn btn-recipe">
+                        <i class="fas fa-calculator me-1"></i>Add to Calculator
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h4><i class="fas fa-info-circle me-2"></i>Product Information</h4>
+                        <div class="product-info">
+                            {% if product.brand %}
+                            <div class="info-item mb-2">
+                                <strong>Brand:</strong> {{ product.brand }}
+                            </div>
+                            {% endif %}
+                            
+                            {% if product.category %}
+                            <div class="info-item mb-2">
+                                <strong>Category:</strong> 
+                                <span class="badge bg-secondary">{{ product.category }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if product.barcode %}
+                            <div class="info-item mb-2">
+                                <strong>Barcode:</strong> 
+                                <code>{{ product.barcode }}</code>
+                            </div>
+                            {% endif %}
+                            
+                            {% if product.serving_size %}
+                            <div class="info-item mb-2">
+                                <strong>Serving Size:</strong> 
+                                {{ product.serving_size }} {{ product.serving_size_unit or 'g' }}
+                            </div>
+                            {% endif %}
+                            
+                            {% if product.servings_per_container %}
+                            <div class="info-item mb-2">
+                                <strong>Servings per Container:</strong> {{ product.servings_per_container }}
+                            </div>
+                            {% endif %}
+                            
+                            {% if product.description %}
+                            <div class="info-item mt-3">
+                                <strong>Description:</strong>
+                                <p class="text-muted mt-1">{{ product.description }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h4><i class="fas fa-check-circle me-2"></i>Verification Status</h4>
+                        <div class="verification-info">
+                            {% if product.is_verified %}
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i>Verified Product
+                                {% if product.verification_date %}
+                                <br><small>Verified on {{ product.verification_date.strftime('%B %d, %Y') }}</small>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Unverified Product
+                                <br><small>This product has not been verified yet.</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <!-- Nutrition Facts -->
+                {% if nutrition %}
+                <div class="mb-4">
+                    <h4><i class="fas fa-chart-pie me-2"></i>Nutrition Facts</h4>
+                    <div class="card nutrition-label">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Per Serving</h5>
+                                    {% if nutrition.calories %}
+                                    <div class="nutrition-item mb-2">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong>Calories</strong>
+                                            <strong>{{ "%.0f"|format(nutrition.calories) }}</strong>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <hr class="my-2">
+                                    
+                                    {% if nutrition.fat_total_g %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Total Fat</span>
+                                            <span>{{ "%.1f"|format(nutrition.fat_total_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.fat_saturated_g %}
+                                    <div class="nutrition-item mb-1 ms-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Saturated Fat</span>
+                                            <span>{{ "%.1f"|format(nutrition.fat_saturated_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.fat_trans_g %}
+                                    <div class="nutrition-item mb-1 ms-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Trans Fat</span>
+                                            <span>{{ "%.1f"|format(nutrition.fat_trans_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.cholesterol_mg %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Cholesterol</span>
+                                            <span>{{ "%.0f"|format(nutrition.cholesterol_mg) }}mg</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.sodium_mg %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Sodium</span>
+                                            <span>{{ "%.0f"|format(nutrition.sodium_mg) }}mg</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.potassium_mg %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Potassium</span>
+                                            <span>{{ "%.0f"|format(nutrition.potassium_mg) }}mg</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <hr class="my-2">
+                                    
+                                    {% if nutrition.carbohydrates_g %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Total Carbohydrates</span>
+                                            <span>{{ "%.1f"|format(nutrition.carbohydrates_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.fiber_g %}
+                                    <div class="nutrition-item mb-1 ms-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Dietary Fiber</span>
+                                            <span>{{ "%.1f"|format(nutrition.fiber_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.sugars_g %}
+                                    <div class="nutrition-item mb-1 ms-3">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Total Sugars</span>
+                                            <span>{{ "%.1f"|format(nutrition.sugars_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <hr class="my-2">
+                                    
+                                    {% if nutrition.protein_g %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Protein</span>
+                                            <span>{{ "%.1f"|format(nutrition.protein_g) }}g</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Vitamins & Minerals</h5>
+                                    {% if nutrition.vitamin_a_percent %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Vitamin A</span>
+                                            <span>{{ "%.0f"|format(nutrition.vitamin_a_percent) }}%</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.vitamin_c_percent %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Vitamin C</span>
+                                            <span>{{ "%.0f"|format(nutrition.vitamin_c_percent) }}%</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.calcium_percent %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Calcium</span>
+                                            <span>{{ "%.0f"|format(nutrition.calcium_percent) }}%</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if nutrition.iron_percent %}
+                                    <div class="nutrition-item mb-1">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Iron</span>
+                                            <span>{{ "%.0f"|format(nutrition.iron_percent) }}%</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if not nutrition.vitamin_a_percent and not nutrition.vitamin_c_percent and not nutrition.calcium_percent and not nutrition.iron_percent %}
+                                    <p class="text-muted">No vitamin/mineral information available.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr class="my-4">
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>Nutrition information not available for this product.
+                </div>
+                {% endif %}
+                
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <i class="fas fa-calendar-alt fa-2x text-primary mb-2"></i>
+                                <h6>Created</h6>
+                                <p class="text-muted mb-0">{{ product.created_at.strftime('%B %d, %Y') if product.created_at else 'Unknown' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <i class="fas fa-clock fa-2x text-success mb-2"></i>
+                                <h6>Last Updated</h6>
+                                <p class="text-muted mb-0">{{ product.updated_at.strftime('%B %d, %Y') if product.updated_at else (product.created_at.strftime('%B %d, %Y') if product.created_at else 'Unknown') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <i class="fas fa-barcode fa-2x text-info mb-2"></i>
+                                <h6>Product ID</h6>
+                                <p class="text-muted mb-0">#{{ product.id }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main.barcode_scanner') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Back to Scanner
+            </a>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('main.nutrition_calculator') }}?product_id={{ product.id }}" class="btn btn-recipe ms-2">
+                <i class="fas fa-calculator me-1"></i>Add to Calculator
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.info-item {
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 0.375rem;
+    border-left: 3px solid #007bff;
+}
+
+.nutrition-label {
+    background: white;
+    border: 2px solid #1f1f1f;
+    border-radius: 8px;
+    font-family: 'Arial', sans-serif;
+}
+
+.nutrition-item {
+    font-size: 0.95rem;
+}
+
+.nutrition-label h5 {
+    font-weight: bold;
+    color: #333;
+    border-bottom: 2px solid #333;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+</style>
+
+{% endblock %}
+
