@@ -38,8 +38,8 @@
                         <!-- Nutrition Info -->
                         {% if ingredient.calories_per_100g %}
                         <div class="mt-3">
-                            <h6>Nutrition per 100g:</h6>
-                            <ul class="list-unstyled small"><li><strong>Calories:</strong> {{ ingredient.calories_per_100g }}g</li>{% if ingredient.protein_per_100g %}<li><strong>Protein:</strong> {{ ingredient.protein_per_100g }}g</li>{% endif %}{% if ingredient.carbs_per_100g %}<li><strong>Carbs:</strong> {{ ingredient.carbs_per_100g }}g</li>{% endif %}{% if ingredient.fat_per_100g %}<li><strong>Fat:</strong> {{ ingredient.fat_per_100g }}g</li>{% endif %}</ul>
+                            <h6>Nutrition per Serving:</h6>
+                            <ul class="list-unstyled small"><li><strong>Calories:</strong> {{ ingredient.calories_per_100g }}</li>{% if ingredient.protein_per_100g %}<li><strong>Protein:</strong> {{ ingredient.protein_per_100g }}g</li>{% endif %}{% if ingredient.carbs_per_100g %}<li><strong>Carbs:</strong> {{ ingredient.carbs_per_100g }}g</li>{% endif %}{% if ingredient.fat_per_100g %}<li><strong>Fat:</strong> {{ ingredient.fat_per_100g }}g</li>{% endif %}</ul>
                         </div>
                         {% endif %}
                     </div>
@@ -108,19 +108,19 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="ingredientCalories" class="form-label">Calories per 100g</label>
+                                <label for="ingredientCalories" class="form-label">Calories per Serving</label>
                                 <input type="number" class="form-control" id="ingredientCalories" name="calories_per_100g" step="0.01" min="0" placeholder="e.g., 250">
                             </div>
                             <div class="mb-3">
-                                <label for="ingredientProtein" class="form-label">Protein per 100g (g)</label>
+                                <label for="ingredientProtein" class="form-label">Protein per Serving (g)</label>
                                 <input type="number" class="form-control" id="ingredientProtein" name="protein_per_100g" step="0.01" min="0" placeholder="e.g., 20.5">
                             </div>
                             <div class="mb-3">
-                                <label for="ingredientCarbs" class="form-label">Carbs per 100g (g)</label>
+                                <label for="ingredientCarbs" class="form-label">Carbs per Serving (g)</label>
                                 <input type="number" class="form-control" id="ingredientCarbs" name="carbs_per_100g" step="0.01" min="0" placeholder="e.g., 30.0">
                             </div>
                             <div class="mb-3">
-                                <label for="ingredientFat" class="form-label">Fat per 100g (g)</label>
+                                <label for="ingredientFat" class="form-label">Fat per Serving (g)</label>
                                 <input type="number" class="form-control" id="ingredientFat" name="fat_per_100g" step="0.01" min="0" placeholder="e.g., 10.0">
                             </div>
                         </div>
@@ -187,19 +187,19 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="editIngredientCalories" class="form-label">Calories per 100g</label>
+                                <label for="editIngredientCalories" class="form-label">Calories per Serving</label>
                                 <input type="number" class="form-control" id="editIngredientCalories" name="calories_per_100g" step="0.01" min="0">
                             </div>
                             <div class="mb-3">
-                                <label for="editIngredientProtein" class="form-label">Protein per 100g (g)</label>
+                                <label for="editIngredientProtein" class="form-label">Protein per Serving (g)</label>
                                 <input type="number" class="form-control" id="editIngredientProtein" name="protein_per_100g" step="0.01" min="0">
                             </div>
                             <div class="mb-3">
-                                <label for="editIngredientCarbs" class="form-label">Carbs per 100g (g)</label>
+                                <label for="editIngredientCarbs" class="form-label">Carbs per Serving (g)</label>
                                 <input type="number" class="form-control" id="editIngredientCarbs" name="carbs_per_100g" step="0.01" min="0">
                             </div>
                             <div class="mb-3">
-                                <label for="editIngredientFat" class="form-label">Fat per 100g (g)</label>
+                                <label for="editIngredientFat" class="form-label">Fat per Serving (g)</label>
                                 <input type="number" class="form-control" id="editIngredientFat" name="fat_per_100g" step="0.01" min="0">
                             </div>
                         </div>

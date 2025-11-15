@@ -625,7 +625,7 @@ def get_personal_ingredients():
         
         ingredient_list = []
         for ing in ingredients:
-            # Calculate nutrition per 100g (already stored per 100g)
+            # Nutrition values are per serving (stored in calories_per_100g, etc. columns for backward compatibility)
             ingredient_list.append({
                 'id': ing['id'],
                 'name': ing['name'],
@@ -732,6 +732,7 @@ def search_public_ingredients():
         
         ingredient_list = []
         for ing in ingredients:
+            # Nutrition values are per serving (stored in calories_per_100g, etc. columns for backward compatibility)
             ingredient_list.append({
                 'id': ing['id'],
                 'name': ing['name'],

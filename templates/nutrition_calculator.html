@@ -495,7 +495,7 @@ function displayIngredientResults(ingredients) {
                         <h6 class="mb-1">${ing.name}</h6>
                         ${ing.brand ? `<p class="mb-1 text-muted">${ing.brand}</p>` : ''}
                         <small>
-                            Calories: ${ing.calories || 0} per 100g | 
+                            Calories: ${ing.calories || 0} per serving | 
                             P: ${ing.protein || 0}g | C: ${ing.carbs || 0}g | F: ${ing.fat || 0}g
                         </small>
                     </div>
@@ -556,7 +556,7 @@ function displayPublicIngredientResults(ingredients) {
                         ${ing.brand ? `<p class="mb-1 text-muted">${ing.brand}</p>` : ''}
                         ${ing.category ? `<span class="badge bg-secondary mb-1">${ing.category}</span>` : ''}
                         <small class="d-block mt-1">
-                            Calories: ${ing.calories || 0} per 100g | 
+                            Calories: ${ing.calories || 0} per serving | 
                             P: ${ing.protein || 0}g | C: ${ing.carbs || 0}g | F: ${ing.fat || 0}g
                         </small>
                     </div>
@@ -621,14 +621,13 @@ function addRecipeToMeal(recipeId, name, caloriesPerServing, protein, carbs, fat
     }
 }
 
-function addIngredientToMeal(ingredientId, name, caloriesPer100g, protein, carbs, fat) {
-    const amount = prompt(`Enter amount in grams (nutrition is per 100g):`, '100') || '100';
-    const parsedAmount = parseFloat(amount);
+function addIngredientToMeal(ingredientId, name, caloriesPerServing, protein, carbs, fat) {
+    const servings = prompt(`Enter number of servings:`, '1') || '1';
+    const parsedServings = parseFloat(servings);
     
-    if (parsedAmount > 0) {
-        // Calculate nutrition for the specified amount (nutrition is stored per 100g)
-        const ratio = parsedAmount / 100;
-        addMealItem(name, parsedAmount, caloriesPer100g * ratio, protein * ratio, carbs * ratio, fat * ratio);
+    if (parsedServings > 0) {
+        // Calculate nutrition for the specified number of servings (nutrition is per serving)
+        addMealItem(name, parsedServings, caloriesPerServing * parsedServings, protein * parsedServings, carbs * parsedServings, fat * parsedServings);
     }
 }
 
