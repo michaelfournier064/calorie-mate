@@ -13,11 +13,6 @@ main_bp = Blueprint('main', __name__)
 def index():
     """Homepage - shows app overview and featured content."""
     try:
-        # Get some basic stats for homepage
-        total_recipes = Recipe.count({'is_public': True, 'is_approved': True})
-        total_products = Product.count()
-        total_users = User.count()
-        
         # Get some recent recipes (simplified)
         recent_recipes_data = Recipe.get_all(
             page=1, per_page=8,
@@ -25,19 +20,23 @@ def index():
         )
         recent_recipes = recent_recipes_data['items']
         
+        # If no recent recipes with filters, try without filters
+        if not recent_recipes:
+            recent_recipes_data = Recipe.get_all(
+                page=1, per_page=8,
+                filters=None
+            )
+            recent_recipes = recent_recipes_data['items']
+        
         return render_template('index.html', 
-                             total_recipes=total_recipes,
-                             total_products=total_products,
-                             total_users=total_users,
                              featured_recipes=[],  # Simplified for now
                              recent_recipes=recent_recipes)
     except Exception as e:
         print(f"Homepage error: {e}")
+        import traceback
+        traceback.print_exc()
         # Fallback with basic info
         return render_template('index.html', 
-                             total_recipes=0,
-                             total_products=0,
-                             total_users=0,
                              featured_recipes=[],
                              recent_recipes=[])
 

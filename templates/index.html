@@ -116,36 +116,6 @@
         </div>
     </section>
     
-    <!-- Statistics -->
-    <section class="mb-5">
-        <div class="row text-center">
-            <div class="col-md-3 mb-3">
-                <div class="stats-card">
-                    <h3 class="fw-bold">{{ "{:,}".format(total_recipes) }}</h3>
-                    <p class="mb-0">Recipes Available</p>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="stats-card">
-                    <h3 class="fw-bold">{{ "{:,}".format(total_products) }}</h3>
-                    <p class="mb-0">Products Scanned</p>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="stats-card">
-                    <h3 class="fw-bold">{{ "{:,}".format(total_users) }}</h3>
-                    <p class="mb-0">Active Users</p>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="stats-card">
-                    <h3 class="fw-bold">24/7</h3>
-                    <p class="mb-0">Available</p>
-                </div>
-            </div>
-        </div>
-    </section>
-    
     <!-- Featured Recipes -->
     {% if featured_recipes %}
     <section class="mb-5">
@@ -267,9 +237,11 @@
         // Animate stats counters
         $('.stats-card h3').each(function() {
             var $this = $(this);
-            var countTo = parseInt($this.text().replace(/,/g, '')) || 0;
+            var textValue = $this.text().trim();
+            var countTo = parseInt(textValue.replace(/,/g, '')) || 0;
             
-            if (countTo > 0) {
+            // Only animate if we have a valid number greater than 0
+            if (countTo > 0 && !isNaN(countTo)) {
                 $({ countNum: 0 }).animate({
                     countNum: countTo
                 }, {
@@ -282,6 +254,9 @@
                         $this.text(this.countNum.toLocaleString());
                     }
                 });
+            } else {
+                // Ensure the value is displayed correctly even if 0
+                $this.text(countTo.toLocaleString());
             }
         });
         
