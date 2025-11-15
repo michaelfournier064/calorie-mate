@@ -705,23 +705,37 @@ $('#manual-product-form').submit(function(e) {
     const data = {};
     
     // Process form data and handle empty values
+    const nutritionFields = ['calories', 'protein_g', 'carbohydrates_g', 'fat_total_g', 
+                             'fiber_g', 'sugars_g', 'fat_saturated_g', 'fat_trans_g', 
+                             'sodium_mg', 'cholesterol_mg', 'potassium_mg', 'vitamin_a_percent', 
+                             'vitamin_c_percent', 'calcium_percent', 'iron_percent'];
+    
     for (let [key, value] of formData.entries()) {
+        // Skip barcode if empty - let backend generate it
+        if (key === 'barcode' && (!value || value.trim() === '')) {
+            continue; // Don't include empty barcode
+        }
+        
         // Convert empty strings to null for optional fields (except name which is required)
         if (key !== 'name' && (!value || value.trim() === '')) {
-            data[key] = null;
-        } else if (key === 'barcode' && (!value || value.trim() === '')) {
-            // Generate a unique barcode if none provided
-            data[key] = 'MANUAL_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        } else {
-            // Parse numeric fields
-            if (['serving_size', 'servings_per_container', 'calories', 'protein_g', 'carbohydrates_g', 
-                 'fat_total_g', 'fiber_g', 'sugars_g', 'fat_saturated_g', 'fat_trans_g', 
-                 'sodium_mg', 'cholesterol_mg', 'potassium_mg', 'vitamin_a_percent', 
-                 'vitamin_c_percent', 'calcium_percent', 'iron_percent'].includes(key)) {
-                data[key] = value ? parseFloat(value) : null;
-            } else {
-                data[key] = value;
+            // Don't add empty fields to data
+            continue;
+        }
+        
+        // Parse numeric fields
+        if (['serving_size', 'servings_per_container'].includes(key)) {
+            data[key] = value ? parseFloat(value) : null;
+        } else if (nutritionFields.includes(key)) {
+            // These will go into nutrition object
+            const numValue = value ? parseFloat(value) : null;
+            if (numValue !== null && !isNaN(numValue)) {
+                if (!data.nutrition) {
+                    data.nutrition = {};
+                }
+                data.nutrition[key] = numValue;
             }
+        } else {
+            data[key] = value;
         }
     }
     
@@ -736,49 +750,15 @@ $('#manual-product-form').submit(function(e) {
         data.serving_size_unit = 'g';
     }
     
+    // Ensure nutrition object exists (even if empty)
+    if (!data.nutrition) {
+        data.nutrition = {};
+    }
+    
     // Show loading state
     const submitBtn = $(this).find('button[type="submit"]');
     const originalText = submitBtn.html();
     submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Adding...');
-    
-    // Build nutrition object
-    const nutrition = {
-        calories: data.calories || null,
-        protein_g: data.protein_g || null,
-        carbohydrates_g: data.carbohydrates_g || null,
-        fiber_g: data.fiber_g || null,
-        sugars_g: data.sugars_g || null,
-        fat_total_g: data.fat_total_g || null,
-        fat_saturated_g: data.fat_saturated_g || null,
-        fat_trans_g: data.fat_trans_g || null,
-        sodium_mg: data.sodium_mg || null,
-        cholesterol_mg: data.cholesterol_mg || null,
-        potassium_mg: data.potassium_mg || null,
-        vitamin_a_percent: data.vitamin_a_percent || null,
-        vitamin_c_percent: data.vitamin_c_percent || null,
-        calcium_percent: data.calcium_percent || null,
-        iron_percent: data.iron_percent || null
-    };
-    
-    // Remove nutrition fields from main data object
-    delete data.calories;
-    delete data.protein_g;
-    delete data.carbohydrates_g;
-    delete data.fiber_g;
-    delete data.sugars_g;
-    delete data.fat_total_g;
-    delete data.fat_saturated_g;
-    delete data.fat_trans_g;
-    delete data.sodium_mg;
-    delete data.cholesterol_mg;
-    delete data.potassium_mg;
-    delete data.vitamin_a_percent;
-    delete data.vitamin_c_percent;
-    delete data.calcium_percent;
-    delete data.iron_percent;
-    
-    // Add nutrition object
-    data.nutrition = nutrition;
     
     $.ajax({
         url: '/api/product',
@@ -809,7 +789,9 @@ $('#manual-product-form').submit(function(e) {
                 errorMsg = 'A product with this barcode already exists. Please use a different barcode or leave it empty.';
             }
             console.error('Error details:', xhr);
-            alert('Error: ' + errorMsg);
+            console.error('Response:', xhr.responseText);
+            console.error('Request data:', JSON.stringify(data, null, 2));
+            alert('Error: ' + errorMsg + '\n\nCheck the browser console for more details.');
         },
         complete: function() {
             submitBtn.prop('disabled', false).html(originalText);

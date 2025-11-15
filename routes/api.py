@@ -119,8 +119,8 @@ def add_product():
                 return jsonify({'error': f'Missing required field: {field}'}), 400
         
         # Generate barcode if not provided
-        barcode = data.get('barcode')
-        if not barcode or barcode.strip() == '':
+        barcode = data.get('barcode', '').strip() if data.get('barcode') else ''
+        if not barcode:
             barcode = f'MANUAL_{current_user.id}_{int(time.time())}_{random.randint(1000, 9999)}'
         
         # Check if barcode already exists
@@ -146,25 +146,29 @@ def add_product():
         
         # Add nutrition if provided
         nutrition_data = data.get('nutrition', {})
-        if any(v is not None and v != '' for v in nutrition_data.values()):
-            ProductNutrition.create(
-                product_id=product.id,
-                calories=nutrition_data.get('calories'),
-                protein_g=nutrition_data.get('protein_g'),
-                carbohydrates_g=nutrition_data.get('carbohydrates_g'),
-                fiber_g=nutrition_data.get('fiber_g'),
-                sugars_g=nutrition_data.get('sugars_g'),
-                fat_total_g=nutrition_data.get('fat_total_g'),
-                fat_saturated_g=nutrition_data.get('fat_saturated_g'),
-                fat_trans_g=nutrition_data.get('fat_trans_g'),
-                sodium_mg=nutrition_data.get('sodium_mg'),
-                cholesterol_mg=nutrition_data.get('cholesterol_mg'),
-                potassium_mg=nutrition_data.get('potassium_mg'),
-                vitamin_a_percent=nutrition_data.get('vitamin_a_percent'),
-                vitamin_c_percent=nutrition_data.get('vitamin_c_percent'),
-                calcium_percent=nutrition_data.get('calcium_percent'),
-                iron_percent=nutrition_data.get('iron_percent')
-            )
+        if nutrition_data and any(v is not None and v != '' and v != 0 for v in nutrition_data.values()):
+            try:
+                ProductNutrition.create(
+                    product_id=product.id,
+                    calories=nutrition_data.get('calories'),
+                    protein_g=nutrition_data.get('protein_g'),
+                    carbohydrates_g=nutrition_data.get('carbohydrates_g'),
+                    fiber_g=nutrition_data.get('fiber_g'),
+                    sugars_g=nutrition_data.get('sugars_g'),
+                    fat_total_g=nutrition_data.get('fat_total_g'),
+                    fat_saturated_g=nutrition_data.get('fat_saturated_g'),
+                    fat_trans_g=nutrition_data.get('fat_trans_g'),
+                    sodium_mg=nutrition_data.get('sodium_mg'),
+                    cholesterol_mg=nutrition_data.get('cholesterol_mg'),
+                    potassium_mg=nutrition_data.get('potassium_mg'),
+                    vitamin_a_percent=nutrition_data.get('vitamin_a_percent'),
+                    vitamin_c_percent=nutrition_data.get('vitamin_c_percent'),
+                    calcium_percent=nutrition_data.get('calcium_percent'),
+                    iron_percent=nutrition_data.get('iron_percent')
+                )
+            except Exception as nutrition_error:
+                current_app.logger.error(f"Error adding nutrition data: {nutrition_error}")
+                # Don't fail the whole request if nutrition fails, just log it
         
         return jsonify({
             'success': True,
@@ -172,9 +176,14 @@ def add_product():
             'message': 'Product added successfully'
         })
     
+    except ValueError as e:
+        current_app.logger.error(f"Add product validation error: {e}")
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
         current_app.logger.error(f"Add product error: {e}")
-        return jsonify({'error': 'Failed to add product'}), 500
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({'error': f'Failed to add product: {str(e)}'}), 500
 
 @api_bp.route('/nutrition/calculate', methods=['POST'])
 @login_required
