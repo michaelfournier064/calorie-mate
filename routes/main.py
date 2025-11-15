@@ -266,6 +266,44 @@ def add_recipe():
             )
             
             if recipe and recipe.id:
+                # Save structured ingredients to recipe_ingredients table if provided
+                selected_ingredients_data = request.form.get('selected_ingredients_data')
+                if selected_ingredients_data:
+                    try:
+                        import json
+                        ingredients_list = json.loads(selected_ingredients_data)
+                        db_client = get_db_client()
+                        
+                        for idx, ing_data in enumerate(ingredients_list):
+                            # Convert quantity to float if possible, otherwise store as string
+                            try:
+                                quantity = float(ing_data.get('quantity', 0))
+                            except (ValueError, TypeError):
+                                # If quantity is a fraction like "1/2", store as string
+                                quantity = ing_data.get('quantity', '0')
+                            
+                            # Determine product_id based on type
+                            product_id = ing_data.get('id') if ing_data.get('type') == 'product' else None
+                            
+                            query = """
+                                INSERT INTO recipe_ingredients 
+                                (recipe_id, ingredient_name, quantity, unit, preparation_note, product_id, order_index)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            """
+                            
+                            db_client.execute_insert(query, (
+                                recipe.id,
+                                ing_data.get('name', ''),
+                                quantity,
+                                ing_data.get('unit', ''),
+                                ing_data.get('preparation_note') or None,
+                                product_id,
+                                idx
+                            ))
+                    except (json.JSONDecodeError, Exception) as e:
+                        print(f"Error saving structured ingredients: {e}")
+                        # Continue with recipe creation even if structured ingredients fail
+                
                 # Create nutrition data if provided
                 if calories_per_serving or protein_g or carbohydrates_g or fat_total_g or fiber_g or sugars_g or sodium_mg:
                     from db_client import get_db_client
@@ -338,7 +376,8 @@ def edit_recipe(recipe_id):
         # Validate required fields
         if not name or not ingredients or not instructions:
             flash('Name, ingredients, and instructions are required.', 'error')
-            return render_template('edit_recipe.html', recipe=recipe)
+            existing_ingredients = recipe.get_ingredients()
+            return render_template('edit_recipe.html', recipe=recipe, existing_ingredients=existing_ingredients)
         
         try:
             # Update the recipe
@@ -352,6 +391,48 @@ def edit_recipe(recipe_id):
             }
             
             success = Recipe.update(recipe_id, update_data)
+            
+            # Update structured ingredients if provided
+            if success:
+                selected_ingredients_data = request.form.get('selected_ingredients_data')
+                if selected_ingredients_data:
+                    try:
+                        import json
+                        ingredients_list = json.loads(selected_ingredients_data)
+                        db_client = get_db_client()
+                        
+                        # Delete existing structured ingredients
+                        db_client.execute_update(
+                            "DELETE FROM recipe_ingredients WHERE recipe_id = %s",
+                            (recipe_id,)
+                        )
+                        
+                        # Insert new structured ingredients
+                        for idx, ing_data in enumerate(ingredients_list):
+                            try:
+                                quantity = float(ing_data.get('quantity', 0))
+                            except (ValueError, TypeError):
+                                quantity = ing_data.get('quantity', '0')
+                            
+                            product_id = ing_data.get('id') if ing_data.get('type') == 'product' else None
+                            
+                            query = """
+                                INSERT INTO recipe_ingredients 
+                                (recipe_id, ingredient_name, quantity, unit, preparation_note, product_id, order_index)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            """
+                            
+                            db_client.execute_insert(query, (
+                                recipe_id,
+                                ing_data.get('name', ''),
+                                quantity,
+                                ing_data.get('unit', ''),
+                                ing_data.get('preparation_note') or None,
+                                product_id,
+                                idx
+                            ))
+                    except (json.JSONDecodeError, Exception) as e:
+                        print(f"Error updating structured ingredients: {e}")
             
             # Update or create nutrition data if provided
             if success:
@@ -432,7 +513,9 @@ def edit_recipe(recipe_id):
             flash('An error occurred while updating the recipe.', 'error')
             print(f"Error updating recipe: {e}")
     
-    return render_template('edit_recipe.html', recipe=recipe)
+    # Get existing structured ingredients for display
+    existing_ingredients = recipe.get_ingredients()
+    return render_template('edit_recipe.html', recipe=recipe, existing_ingredients=existing_ingredients)
 
 @main_bp.route('/recipes/delete/<int:recipe_id>', methods=['POST'])
 @login_required
@@ -488,6 +571,7 @@ def search():
     results = {
         'recipes': [],
         'products': [],
+        'ingredients': [],
         'query': query,
         'search_type': search_type,
         'total_results': 0
@@ -519,7 +603,49 @@ def search():
                 product_results = Product.search(query)
                 results['products'] = product_results[:20]  # Limit to 20
             
-            results['total_results'] = len(results['recipes']) + len(results['products'])
+            # Search personal ingredients (public ones and user's own if logged in)
+            if search_type in ['all', 'ingredients']:
+                db_client = get_db_client()
+                search_term = f"%{query}%"
+                
+                # Build query for ingredients - include public ingredients and user's own if logged in
+                if current_user.is_authenticated:
+                    ingredient_query = """
+                        SELECT * FROM user_personal_ingredients
+                        WHERE (
+                            name LIKE %s
+                            OR brand LIKE %s
+                            OR category LIKE %s
+                            OR description LIKE %s
+                        )
+                        AND (
+                            is_public = 1
+                            OR user_id = %s
+                        )
+                        ORDER BY is_public DESC, name ASC
+                        LIMIT 20
+                    """
+                    ingredient_params = [search_term, search_term, search_term, search_term, current_user.id]
+                else:
+                    # Only search public ingredients if user is not logged in
+                    ingredient_query = """
+                        SELECT * FROM user_personal_ingredients
+                        WHERE (
+                            name LIKE %s
+                            OR brand LIKE %s
+                            OR category LIKE %s
+                            OR description LIKE %s
+                        )
+                        AND is_public = 1
+                        ORDER BY name ASC
+                        LIMIT 20
+                    """
+                    ingredient_params = [search_term, search_term, search_term, search_term]
+                
+                ingredient_results = db_client.execute_query(ingredient_query, tuple(ingredient_params))
+                results['ingredients'] = ingredient_results[:20]  # Limit to 20
+            
+            results['total_results'] = len(results['recipes']) + len(results['products']) + len(results['ingredients'])
     except Exception as e:
         print(f"Search error: {e}")
         import traceback

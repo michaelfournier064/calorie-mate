@@ -644,6 +644,64 @@ def get_personal_ingredients():
         current_app.logger.error(f"Get personal ingredients error: {e}")
         return jsonify({'error': 'Failed to get personal ingredients'}), 500
 
+@api_bp.route('/ingredients/search')
+@login_required
+def search_all_ingredients():
+    """Search for ingredients from products and personal ingredients for recipe creation."""
+    try:
+        query = request.args.get('q', '').strip()
+        db_client = get_db_client()
+        
+        results = []
+        
+        if query and len(query) >= 2:
+            search_term = f'%{query}%'
+            
+            # Search products
+            products = db_client.execute_query(
+                """SELECT id, name, brand, category, 'product' as type
+                   FROM products 
+                   WHERE name LIKE %s OR brand LIKE %s
+                   ORDER BY name ASC
+                   LIMIT 20""",
+                (search_term, search_term)
+            )
+            
+            for prod in products:
+                results.append({
+                    'id': prod['id'],
+                    'name': prod['name'],
+                    'brand': prod.get('brand'),
+                    'category': prod.get('category'),
+                    'type': 'product'
+                })
+            
+            # Search personal ingredients (public ones and user's own)
+            personal_ingredients = db_client.execute_query(
+                """SELECT id, name, brand, category, 'ingredient' as type
+                   FROM user_personal_ingredients 
+                   WHERE (is_public = 1 OR user_id = %s)
+                   AND (name LIKE %s OR brand LIKE %s OR category LIKE %s)
+                   ORDER BY name ASC
+                   LIMIT 20""",
+                (current_user.id, search_term, search_term, search_term)
+            )
+            
+            for ing in personal_ingredients:
+                results.append({
+                    'id': ing['id'],
+                    'name': ing['name'],
+                    'brand': ing.get('brand'),
+                    'category': ing.get('category'),
+                    'type': 'ingredient'
+                })
+        
+        return jsonify({'ingredients': results})
+    
+    except Exception as e:
+        current_app.logger.error(f"Search all ingredients error: {e}")
+        return jsonify({'error': 'Failed to search ingredients'}), 500
+
 @api_bp.route('/ingredients/public')
 @login_required
 def search_public_ingredients():
@@ -752,19 +810,18 @@ def add_personal_ingredient():
         # Insert the ingredient
         query = """
             INSERT INTO user_personal_ingredients 
-            (user_id, name, brand, category, serving_size, serving_size_unit,
+            (user_id, name, brand, description, category,
              calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g,
              is_public, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
         """
         
         ingredient_id = db_client.execute_insert(query, (
             current_user.id,
             ingredient_data['name'],
             ingredient_data['brand'],
+            ingredient_data['description'],
             ingredient_data['category'],
-            ingredient_data['serving_size'],
-            ingredient_data['serving_size_unit'],
             ingredient_data['calories_per_100g'],
             ingredient_data['protein_per_100g'],
             ingredient_data['carbs_per_100g'],

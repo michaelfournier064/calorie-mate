@@ -28,10 +28,39 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="ingredients" class="form-label">Ingredients *</label>
-                        <textarea class="form-control" id="ingredients" name="ingredients" rows="6" required
-                                  placeholder="List all ingredients with quantities:&#10;• 2 cups all-purpose flour&#10;• 1 cup sugar&#10;• 1/2 cup butter&#10;• 2 eggs&#10;• 1 tsp vanilla extract"></textarea>
-                        <div class="form-text">List each ingredient on a new line with quantities</div>
+                        <label class="form-label">Ingredients *</label>
+                        
+                        <!-- Ingredient Search and Add Section -->
+                        <div class="card bg-light mb-2">
+                            <div class="card-body p-3">
+                                <div class="row g-2">
+                                    <div class="col-md-8">
+                                        <input type="text" class="form-control" id="ingredient-search" 
+                                               placeholder="Search for ingredients in database...">
+                                        <div id="ingredient-search-results" class="position-relative"></div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="button" class="btn btn-outline-primary w-100" 
+                                                data-bs-toggle="modal" data-bs-target="#addIngredientModal">
+                                            <i class="fas fa-plus me-1"></i>Add New Ingredient
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Selected Ingredients List -->
+                        <div id="selected-ingredients-list" class="mb-2"></div>
+                        
+                        <!-- Manual Entry Textarea (hidden by default, can be toggled) -->
+                        <div class="mb-2">
+                            <button type="button" class="btn btn-sm btn-link p-0" id="toggle-manual-entry">
+                                <i class="fas fa-edit me-1"></i>Or enter ingredients manually
+                            </button>
+                        </div>
+                        <textarea class="form-control" id="ingredients" name="ingredients" rows="6" 
+                                  placeholder="List all ingredients with quantities:&#10;• 2 cups all-purpose flour&#10;• 1 cup sugar&#10;• 1/2 cup butter&#10;• 2 eggs&#10;• 1 tsp vanilla extract" style="display: none;"></textarea>
+                        <div class="form-text">Search and select ingredients from database, or enter manually</div>
                     </div>
 
                     <div class="mb-3">
@@ -250,10 +279,69 @@
         </div>
     </div>
 </div>
+
+<!-- Add Ingredient Modal -->
+<div class="modal fade" id="addIngredientModal" tabindex="-1" aria-labelledby="addIngredientModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addIngredientModalLabel">Add New Ingredient to Database</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-ingredient-form">
+                    <div class="mb-3">
+                        <label for="new-ingredient-name" class="form-label">Ingredient Name *</label>
+                        <input type="text" class="form-control" id="new-ingredient-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-ingredient-brand" class="form-label">Brand (Optional)</label>
+                        <input type="text" class="form-control" id="new-ingredient-brand">
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-ingredient-category" class="form-label">Category (Optional)</label>
+                        <select class="form-select" id="new-ingredient-category">
+                            <option value="">Select Category</option>
+                            <option value="Dairy">Dairy</option>
+                            <option value="Meat">Meat</option>
+                            <option value="Vegetables">Vegetables</option>
+                            <option value="Fruits">Fruits</option>
+                            <option value="Grains">Grains</option>
+                            <option value="Spices">Spices</option>
+                            <option value="Oils">Oils</option>
+                            <option value="Beverages">Beverages</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-ingredient-description" class="form-label">Description (Optional)</label>
+                        <textarea class="form-control" id="new-ingredient-description" rows="2"></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="new-ingredient-public" value="true">
+                        <label class="form-check-label" for="new-ingredient-public">
+                            Make this ingredient publicly accessible
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-new-ingredient-btn">
+                    <i class="fas fa-save me-1"></i>Add Ingredient
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // Store selected ingredients
+    let selectedIngredients = [];
+    let searchTimeout = null;
+
     // Auto-resize textareas
     document.querySelectorAll('textarea').forEach(textarea => {
         textarea.addEventListener('input', function() {
@@ -268,7 +356,6 @@
         const cookTime = parseInt(document.getElementById('cook_time').value) || 0;
         const totalTime = prepTime + cookTime;
         
-        // Display total time (you could add a display field if desired)
         if (totalTime > 0) {
             console.log(`Total time: ${totalTime} minutes`);
         }
@@ -276,6 +363,186 @@
 
     document.getElementById('prep_time').addEventListener('input', updateTotalTime);
     document.getElementById('cook_time').addEventListener('input', updateTotalTime);
+
+    // Ingredient search functionality
+    const ingredientSearchInput = document.getElementById('ingredient-search');
+    const searchResultsDiv = document.getElementById('ingredient-search-results');
+
+    ingredientSearchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        clearTimeout(searchTimeout);
+        
+        if (query.length < 2) {
+            searchResultsDiv.innerHTML = '';
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            searchIngredients(query);
+        }, 300);
+    });
+
+    function searchIngredients(query) {
+        fetch(`/api/ingredients/search?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                displaySearchResults(data.ingredients || []);
+            })
+            .catch(error => {
+                console.error('Error searching ingredients:', error);
+            });
+    }
+
+    function displaySearchResults(ingredients) {
+        if (ingredients.length === 0) {
+            searchResultsDiv.innerHTML = '<div class="list-group-item text-muted">No ingredients found</div>';
+            return;
+        }
+        
+        let html = '<div class="list-group position-absolute w-100" style="z-index: 1000; max-height: 300px; overflow-y: auto;">';
+        ingredients.forEach(ing => {
+            const displayName = ing.brand ? `${ing.name} (${ing.brand})` : ing.name;
+            html += `
+                <button type="button" class="list-group-item list-group-item-action" 
+                        onclick="selectIngredient(${ing.id}, '${ing.name.replace(/'/g, "\\'")}', '${ing.type}')">
+                    <strong>${displayName}</strong>
+                    ${ing.category ? `<span class="badge bg-secondary ms-2">${ing.category}</span>` : ''}
+                    <span class="badge bg-info ms-2">${ing.type}</span>
+                </button>
+            `;
+        });
+        html += '</div>';
+        searchResultsDiv.innerHTML = html;
+    }
+
+    // Select ingredient and add to list
+    window.selectIngredient = function(id, name, type) {
+        // Check if already added
+        if (selectedIngredients.find(ing => ing.id === id && ing.type === type)) {
+            alert('This ingredient is already added');
+            return;
+        }
+        
+        // Prompt for quantity
+        const quantity = prompt(`Enter quantity for ${name} (e.g., 2 cups, 1/2 tsp, 200g):`, '');
+        if (quantity === null) return;
+        
+        const unit = prompt(`Enter unit (e.g., cups, tsp, g, pieces):`, '');
+        const prepNote = prompt(`Enter preparation note (optional, e.g., "chopped", "diced"):`, '');
+        
+        selectedIngredients.push({
+            id: id,
+            name: name,
+            type: type,
+            quantity: quantity || '',
+            unit: unit || '',
+            preparation_note: prepNote || ''
+        });
+        
+        updateSelectedIngredientsList();
+        ingredientSearchInput.value = '';
+        searchResultsDiv.innerHTML = '';
+    };
+
+    function updateSelectedIngredientsList() {
+        const listDiv = document.getElementById('selected-ingredients-list');
+        
+        if (selectedIngredients.length === 0) {
+            listDiv.innerHTML = '';
+            return;
+        }
+        
+        let html = '<div class="list-group">';
+        selectedIngredients.forEach((ing, index) => {
+            const displayText = `${ing.quantity} ${ing.unit} ${ing.name}${ing.preparation_note ? ` (${ing.preparation_note})` : ''}`;
+            html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>${displayText}</span>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeIngredient(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        });
+        html += '</div>';
+        listDiv.innerHTML = html;
+        
+        // Update hidden textarea with ingredients list
+        updateIngredientsTextarea();
+    }
+
+    window.removeIngredient = function(index) {
+        selectedIngredients.splice(index, 1);
+        updateSelectedIngredientsList();
+    };
+
+    function updateIngredientsTextarea() {
+        const textarea = document.getElementById('ingredients');
+        let text = '';
+        selectedIngredients.forEach(ing => {
+            const line = `${ing.quantity} ${ing.unit} ${ing.name}${ing.preparation_note ? ` (${ing.preparation_note})` : ''}`;
+            text += (text ? '\n' : '') + line;
+        });
+        textarea.value = text;
+    }
+
+    // Toggle manual entry
+    document.getElementById('toggle-manual-entry').addEventListener('click', function() {
+        const textarea = document.getElementById('ingredients');
+        if (textarea.style.display === 'none') {
+            textarea.style.display = 'block';
+            textarea.required = true;
+            this.innerHTML = '<i class="fas fa-times me-1"></i>Hide manual entry';
+        } else {
+            textarea.style.display = 'none';
+            textarea.required = false;
+            this.innerHTML = '<i class="fas fa-edit me-1"></i>Or enter ingredients manually';
+        }
+    });
+
+    // Add new ingredient to database
+    document.getElementById('save-new-ingredient-btn').addEventListener('click', function() {
+        const name = document.getElementById('new-ingredient-name').value.trim();
+        if (!name) {
+            alert('Ingredient name is required');
+            return;
+        }
+        
+        const data = {
+            name: name,
+            brand: document.getElementById('new-ingredient-brand').value.trim() || null,
+            category: document.getElementById('new-ingredient-category').value || null,
+            description: document.getElementById('new-ingredient-description').value.trim() || null,
+            is_public: document.getElementById('new-ingredient-public').checked
+        };
+        
+        fetch('/api/personal-ingredients', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Close modal and reset form
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addIngredientModal'));
+                modal.hide();
+                document.getElementById('add-ingredient-form').reset();
+                
+                // Automatically select the newly added ingredient
+                selectIngredient(data.ingredient_id, name, 'ingredient');
+            } else {
+                alert('Failed to add ingredient: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to add ingredient');
+        });
+    });
 
     // Form validation
     document.querySelector('form').addEventListener('submit', function(e) {
@@ -304,6 +571,13 @@
             alert('Please enter a valid video URL.');
             return false;
         }
+        
+        // Store selected ingredients data for backend processing
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'selected_ingredients_data';
+        hiddenInput.value = JSON.stringify(selectedIngredients);
+        this.appendChild(hiddenInput);
     });
 
     function isValidUrl(string) {

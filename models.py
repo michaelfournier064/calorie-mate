@@ -801,8 +801,10 @@ class Recipe:
         
         # Build comprehensive search query across multiple fields
         # For JSON tags, we search for exact matches and also convert JSON to text for partial matching
+        # Also search in recipe_ingredients table for individual ingredient names
         search_query = """
         SELECT DISTINCT r.* FROM recipes r
+        LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
         WHERE (
             r.name LIKE %s 
             OR r.description LIKE %s 
@@ -813,10 +815,12 @@ class Recipe:
                 JSON_SEARCH(r.dietary_tags, 'one', %s) IS NOT NULL
                 OR CAST(r.dietary_tags AS CHAR) LIKE %s
             ))
+            OR ri.ingredient_name LIKE %s
         )
         """
         # Search for exact tag match and also search in JSON text representation
-        params = [search_term, search_term, search_term, search_term, search_term, query, search_term]
+        # Added search_term for recipe_ingredients.ingredient_name
+        params = [search_term, search_term, search_term, search_term, search_term, query, search_term, search_term]
         
         if filters:
             # Build WHERE clause manually for direct SQL
