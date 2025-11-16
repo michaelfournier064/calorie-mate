@@ -328,27 +328,31 @@ def add_recipe():
                 
                 # Create nutrition data if provided
                 if calories_per_serving or protein_g or carbohydrates_g or fat_total_g or fiber_g or sugars_g or sodium_mg:
-                    from db_client import get_db_client
-                    db_client = get_db_client()
-                    
-                    query = """
-                        INSERT INTO recipe_nutrition 
-                        (recipe_id, calories_per_serving, protein_g, carbohydrates_g, fat_total_g,
-                         fiber_g, sugars_g, sodium_mg, is_calculated, created_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
-                    """
-                    
-                    db_client.execute_insert(query, (
-                        recipe.id,
-                        float(calories_per_serving) if calories_per_serving else None,
-                        float(protein_g) if protein_g else None,
-                        float(carbohydrates_g) if carbohydrates_g else None,
-                        float(fat_total_g) if fat_total_g else None,
-                        float(fiber_g) if fiber_g else None,
-                        float(sugars_g) if sugars_g else None,
-                        float(sodium_mg) if sodium_mg else None,
-                        False
-                    ))
+                    try:
+                        from db_client import get_db_client
+                        db_client = get_db_client()
+                        
+                        query = """
+                            INSERT INTO recipe_nutrition 
+                            (recipe_id, calories_per_serving, protein_g, carbohydrates_g, fat_total_g,
+                             fiber_g, sugars_g, sodium_mg, is_calculated, created_at)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                        """
+                        
+                        db_client.execute_insert(query, (
+                            recipe.id,
+                            float(calories_per_serving) if calories_per_serving else None,
+                            float(protein_g) if protein_g else None,
+                            float(carbohydrates_g) if carbohydrates_g else None,
+                            float(fat_total_g) if fat_total_g else None,
+                            float(fiber_g) if fiber_g else None,
+                            float(sugars_g) if sugars_g else None,
+                            float(sodium_mg) if sodium_mg else None,
+                            False
+                        ))
+                    except (ValueError, Exception) as e:
+                        print(f"Error saving nutrition data: {e}")
+                        # Continue with recipe creation even if nutrition data fails
                 
                 flash('Recipe created successfully!', 'success')
                 return redirect(url_for('main.view_recipe', recipe_id=recipe.id))
@@ -561,7 +565,9 @@ def delete_recipe(recipe_id):
     
     except Exception as e:
         print(f"Error deleting recipe: {e}")
-        return jsonify({'error': 'An error occurred while deleting the recipe'}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'An error occurred while deleting the recipe: {str(e)}'}), 500
 
 
 @main_bp.route('/barcode-scanner')

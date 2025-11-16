@@ -247,14 +247,28 @@ function deleteRecipe(recipeId) {
         return;
     }
     
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+        alert('Error: CSRF token not found. Please refresh the page and try again.');
+        return;
+    }
+    
     fetch(`/recipes/delete/${recipeId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': getCsrfToken()
+            'X-CSRFToken': csrfToken
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            // Try to parse JSON error, otherwise use status text
+            return response.json().catch(() => {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert('Recipe deleted successfully!');
@@ -265,7 +279,7 @@ function deleteRecipe(recipeId) {
     })
     .catch(error => {
         console.error('Delete error:', error);
-        alert('An error occurred while deleting the recipe');
+        alert('An error occurred while deleting the recipe: ' + error.message);
     });
 }
 
@@ -326,3 +340,4 @@ function getCsrfToken() {
 }
 </script>
 {% endblock %}
+
